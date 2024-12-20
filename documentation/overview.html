@@ -20,6 +20,35 @@
             line-height: 1.5; /* Line height */
             white-space: pre-wrap; /* Wrap long lines */
         }
+        .code_container {
+            max-width: 1600px;
+            margin: auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+
+        .code-line {
+            color: black; /* Green for the curl command */
+        }
+        .code-line-comment {
+            color: #888; /* Gray for comments */
+        }
+        .code-line-header {
+            color: #008000; /* Blue for headers */
+        }
+        .code-line-red {
+            color: red; /* Brown for keys */
+        }
+        .code-line-value {
+            color: #008000; /* Red for values */
+        }
+        .time {
+            font-size: 0.9em;
+            color: #777;
+            margin-top: 10px;
+        }
         h1 {
             color: #333;
         }
@@ -92,24 +121,30 @@
 </head>
 <body>
 
-    <h1>Developer quuickstart</h1> 
+    <h1>OpenAI developer Platform</h1> 
     <h2>Set up your environment and make your first API request in minutes</h2>
     <p>Use the following cURL command to interact with the OpenAI API:</p>
     <h2>cURL Example</h2>
     <p>Use the following cURL command to interact with the OpenAI API:</p>
     
-    <pre>
-curl https://cahome.igears.com.hk/ai/ \
-  -H "Content-Type: application/json" \
-  -d '{
-    -H "Authorization: Bearer $OPENAI_API_KEY"
-      "model": "gpt-4",
-      "store": true,
-      "messages": [
-          {"role": "user", "content": "Write a haiku about nature."}
-      ]
-  }'
-    </pre>
+    <div class="code_container">
+        <h1>Developer Quickstart</h1>
+        <p>Set up your environment and make your first API request in minutes</p>
+        <div class="code-block">
+            <span class="code-line">curl <span class="code-line-red">"https://cahome.igears.com.hk/ai/"</span> \</span><br>
+            <span class="code-line">-H <span class="code-line-header">"Content-Type: application/json"</span> \</span><br>
+            <span class="code-line">-d '{</span><br>
+                <span class="code-line-red">&nbsp;&nbsp;"key": <span class="code-line-red">"Authorization: Bearer $OPENAI_API_KEY"</span>,</span><br>
+            <span class="code-line">&nbsp;&nbsp;"model": <span class="code-line-value">"gpt-4"</span>,</span><br>
+            <span class="code-line">&nbsp;&nbsp;"store": <span class="code-line-value">true</span>,</span><br>
+            <span class="code-line">&nbsp;&nbsp;"messages": [{</span><br>
+            <span class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;"role": <span class="code-line-value">"user"</span>,</span><br>
+            <span class="code-line">&nbsp;&nbsp;&nbsp;&nbsp;"content": <span class="code-line-value">"write a haiku about nature"</span></span><br>
+            <span class="code-line">&nbsp;&nbsp;}]</span><br>
+            <span class="code-line">}'</span>
+        </div>
+        <div class="time">5 min</div>
+    </div>
 
     <h1>Meet the Models</h1>
     <div class="container">
