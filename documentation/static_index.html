@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Sidebar Navigation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            display: flex;
+        }
+        .sidebar {
+            width: 250px;
+            height: 100vh;
+            background-color: #f4f4f4;
+            padding: 20px;
+            overflow-y: auto; /* Enable vertical scrolling */
+            border-right: 1px solid #ddd;
+        }
+        .sidebar h2 {
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            color: #333;
+        }
+        .sidebar ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        .sidebar li {
+            padding: 10px 0;
+        }
+        .sidebar li:hover {
+            background-color: #e0e0e0; /* Highlight on hover */
+            cursor: pointer;
+        }
+        .sidebar a {
+            text-decoration: none;
+            color: #333;
+        }
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        .content {
+            flex-grow: 1;
+            padding: 20px;
+            background-color: #fff;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <h2>GET STARTED</h2>
+    <ul>
+        <li><a href="#" onclick="showContent('overview')">Overview</a></li>
+        <li><a href="#" onclick="showContent('quickstart')">Quickstart</a></li>
+        <li><a href="#" onclick="showContent('models')">Models</a></li>
+        <li><a href="#" onclick="showContent('changelog')">Changelog</a></li>
+        <li><a href="#" onclick="showContent('terms')">Terms and policies</a></li>
+    </ul>
+</div>
+
+<div class="content">
+    <div id="overview" class="page hidden">
+        <h1>Overview</h1>
+        <p>This is the overview content.</p>
+    </div>
+    <div id="quickstart" class="page hidden">
+        <h1>Quickstart</h1>
+        <p>This is the quickstart content.</p>
+    </div>
+    <div id="models" class="page hidden">
+        <h1>Models</h1>
+        <p>This is the models content.</p>
+    </div>
+    <div id="changelog" class="page hidden">
+        <h1>Changelog</h1>
+        <p>This is the changelog content.</p>
+    </div>
+    <div id="terms" class="page hidden">
+        <h1>Terms and Policies</h1>
+        <p>This is the terms and policies content.</p>
+    </div>
+</div>
+
+<script>
+    function showContent(pageId) {
+        // Hide all pages
+        const pages = document.querySelectorAll('.page');
+        pages.forEach(page => {
+            page.classList.add('hidden');
+        });
+        // Show the selected page
+        const selectedPage = document.getElementById(pageId);
+        selectedPage.classList.remove('hidden');
+    }
+    
+    // Show the overview page by default
+    showContent('overview');
+</script>
+
+</body>
+</html>

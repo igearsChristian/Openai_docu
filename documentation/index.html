@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenAI Clone</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            display: flex;
+        }
+        .sidebar {
+            width: 250px;
+            height: 100vh;
+            background-color: #f4f4f4;
+            padding: 20px;
+            overflow-y: auto; /* Enable vertical scrolling */
+            border-right: 1px solid #ddd;
+        }
+        .sidebar h2 {
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            color: #333;
+        }
+        .sidebar ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        .sidebar li {
+            padding: 10px 0;
+        }
+        .sidebar li:hover {
+            background-color: #e0e0e0; /* Highlight on hover */
+            cursor: pointer;
+        }
+        .sidebar a {
+            text-decoration: none;
+            color: #333;
+        }
+        .sidebar a:hover {
+            text-decoration: underline;
+        }
+        .content {
+            flex-grow: 1;
+            padding: 20px;
+            background-color: #fff;
+        }
+
+        .secondary-sidebar {
+            width: 200px;
+            background-color: #f9f9f9;
+            padding: 10px;
+            border-left: 1px solid #ddd;
+            margin-left: 20px; /* Space between sidebars */
+            height: auto; /* Adjust height as needed */
+        }
+
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="sidebar">
+    <ul>
+        <h3>GET STARTED</h3>
+        <li><a href="#" onclick="loadPage('overview.html')">Overview</a></li>
+        <li><a href="#" onclick="loadPage('quickstart.html')">Quickstart</a></li>
+        <li><a href="#" onclick="loadPage('model.html')">Models</a></li>
+        <li><a href="#" onclick="loadPage('changelog.html')">Changelog</a></li>
+        <li><a href="#" onclick="loadPage('terms&policies.html')">Terms and policies</a></li>
+    </ul>
+
+        <h3>More Policies</h3>
+        <ul>
+            <li><a href="#" onclick="loadPage('Textgeneration.html')">Text generation</a></li>
+            <li><a href="#" onclick="loadPage('dev.html')">Vision</a></li>
+
+        </ul>
+    </div>
+    
+</div>
+
+
+<div class="content">
+    <iframe id="contentFrame" src="overview.html"></iframe>
+</div>
+
+<script>
+    function loadPage(page) {
+        document.getElementById('contentFrame').src = page;
+    }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenAI Developer Platform - cURL Example</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace; /* Monospace font */
+            background-color: #f5f5f5; /* Light background */
+            padding: 20px; /* Padding around the body */
+        }
+        pre {
+            background-color: lightgray; /* Dark background */
+            color: black; /* Light gray text */
+            padding: 20px; /* Padding inside the pre tag */
+            border-radius: 5px; /* Rounded corners */
+            overflow: auto; /* Scroll if necessary */
+            font-size: 14px; /* Font size */
+            line-height: 1.5; /* Line height */
+            white-space: pre-wrap; /* Wrap long lines */
+        }
+        h1 {
+            color: #333;
+        }
+
+        .container {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+        .card {
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 10px;
+            width: calc(30% - 20px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        h2 {
+            font-size: 1.5em;
+            margin-bottom: 10px;
+        }
+        p {
+            margin-bottom: 15px;
+        }
+        .explore {
+            text-align: center;
+            background-color: #007bff;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            text-decoration: none;
+        }
+        .explore:hover {
+            background-color: #0056b3;
+        }
+        @media (max-width: 768px) {
+            .card {
+                width: calc(100% - 20px);
+            }
+        }
+        .title {
+            font-size: 1.5em;
+            margin-bottom: 10px;
+        }
+        .description {
+            font-size: 1em;
+            margin-bottom: 20px;
+        }
+        .example {
+            background-color: grey;
+            border-left: 4px solid #007bff;
+            padding: 10px;
+            font-family: 'Courier New', monospace;
+        }
+        .icon {
+            width: 40px;
+            height: 40px;
+            margin-right: 15px;
+        }
+        .title {
+            font-size: 1.2em;
+            margin: 0;
+        }
+        .description {
+            font-size: 0.9em;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Developer quuickstart</h1> 
+    <h2>Set up your environment and make your first API request in minutes</h2>
+    <p>Use the following cURL command to interact with the OpenAI API:</p>
+    <h2>cURL Example</h2>
+    <p>Use the following cURL command to interact with the OpenAI API:</p>
+    
+    <pre>
+curl https://cahome.igears.com.hk/ai/ \
+  -H "Content-Type: application/json" \
+  -d '{
+    -H "Authorization: Bearer $OPENAI_API_KEY"
+      "model": "gpt-4",
+      "store": true,
+      "messages": [
+          {"role": "user", "content": "Write a haiku about nature."}
+      ]
+  }'
+    </pre>
+
+    <h1>Meet the Models</h1>
+    <div class="container">
+        <div class="card">
+            <h2>Flagship model</h2>
+            <p>General Intelligence</p>
+            <p>Text and image input, text output</p>
+            <p>Higher price point</p>
+        </div>
+        <div class="card">
+            <h2>GPT-40 mini</h2>
+            <p>Our fast, affordable small model for focused tasks</p>
+            <p>Text and image input, text output</p>
+            <p>128k context length</p>
+            <p>Faster model, lower price per token</p>
+        </div>
+        <div class="card">
+            <h2>o1 & o1-mini</h2>
+            <p>Reasoning models that are complex, not simple.</p>
+            <p>Text and output</p>
+            <p>Uses additional reasoning</p>
+        </div>
+    </div>
+    <a href="#" class="explore">Explore all</a>
+
+    <h1>Start building</h1>
+<div class="container">
+    <div class="card" style="background-color: #7B5B3C; color: white;">
+        <div class="title">Structured Outputs</div>
+        <div class="description">Ensure model responses adhere to your supplied JSON schema.</div>
+    </div>
+    <div class="card" style="background-color: #4A90E2; color: white;">
+        <div class="title">Realtime API</div>
+        <div class="description">Build low-latency multimodal experiences.</div>
+    </div>
+    <div class="card" style="background-color: #6A5ACD; color: white;">
+        <div class="title">Assistants API</div>
+        <div class="description">Build conversational assistants and File Search.</div>
+        <div class="example">User: Can I order two americanos and a chocolate donut?</div>
+    </div>
+</div>
+
+<h1>Explore our guides</h1>
+<div class="container">
+    <div class="card">
+        <img src="https://via.placeholder.com/40" alt="Prompt Engineering Icon" class="icon">
+        <div>
+            <div class="title">Prompt engineering</div>
+            <div class="description">Get better results from LLMs.</div>
+        </div>
+    </div>
+    <div class="card">
+        <img src="https://via.placeholder.com/40" alt="Production Best Practices Icon" class="icon">
+        <div>
+            <div class="title">Production best practices</div>
+            <div class="description">Transition from prototype to production.</div>
+        </div>
+    </div>
+    <div class="card">
+        <img src="https://via.placeholder.com/40" alt="Safety Best Practices Icon" class="icon">
+        <div>
+            <div class="title">Safety best practices</div>
+            <div class="description">Make sure your application is safe.</div>
+        </div>
+    </div>
+    <div class="card">
+        <img src="https://via.placeholder.com/40" alt="Latency Optimization Icon" class="icon">
+        <div>
+            <div class="title">Latency optimization</div>
+            <div class="description">Improve latency across multiple use cases.</div>
+        </div>
+    </div>
+    <div class="card">
+        <img src="https://via.placeholder.com/40" alt="Optimizing LLM Accuracy Icon" class="icon">
+        <div>
+            <div class="title">Optimizing LLM accuracy</div>
+            <div class="description">Maximize correctness and consistent behavior of LLMs.</div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text Generation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+            padding: 0;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        h1, h2 {
+            color: #0073e6;
+        }
+        code {
+            background-color: #e8e8e8;
+            padding: 5px;
+            border-radius: 4px;
+            display: block;
+            margin: 10px 0;
+            white-space: pre;
+        }
+        a {
+            color: #0073e6;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        @media (max-width: 600px) {
+            body {
+                margin: 10px;
+            }
+        }
+
+        #short_code {
+            display: inline-block; /* Allows width restriction */
+            max-width: 150px; /* Set your desired maximum width */
+        }
+    </style>
+</head>
+<body>
+    <h1>Text Generation</h1>
+    <p>Learn how to generate text from a prompt.</p>
+    <p>OpenAI provides simple APIs to use a <a href="/docs/models">large language model</a> to generate text from a prompt, as you might using <a href="https://chatgpt.com">ChatGPT</a>. These models have been trained on vast quantities of data to understand multimedia inputs and natural language instructions. From these <a href="/docs/guides/prompt-engineering">prompts</a>, models can generate almost any kind of text response, like code, mathematical equations, structured JSON data, or human-like prose.</p>
+
+    <h2>Quickstart</h2>
+    <p>To generate text, you can use the <a href="/docs/api-reference/chat/">chat completions endpoint</a> in the REST API, as seen in the examples below. You can either use the <a href="/docs/api-reference">REST API</a> from the HTTP client of your choice, or use one of OpenAI's <a href="/docs/libraries">official SDKs</a> for your preferred programming language.</p>
+
+    <h3>Generate prose</h3>
+    <p>Create a human-like response to a prompt</p>
+    <code>
+        import OpenAI from "openai";<br>
+        const openai = new OpenAI();<br><br>
+        const completion = await openai.chat.completions.create({<br>
+            model: "gpt-4o",<br>
+            messages: [<br>
+                { role: "developer", content: "You are a helpful assistant." },<br>
+                { role: "user", content: "Write a haiku about recursion in programming." },<br>
+            ],<br>
+        });<br><br>
+        console.log(completion.choices[0].message);
+    </code>
+
+    <code>
+        from openai import OpenAI<br>
+        client = OpenAI()<br><br>
+        completion = client.chat.completions.create(<br>
+            model="gpt-4o",<br>
+            messages=[<br>
+                {"role": "developer", "content": "You are a helpful assistant."},<br>
+                { "role": "user", "content": "Write a haiku about recursion in programming." }<br>
+            ]<br>
+        )<br><br>
+        print(completion.choices[0].message)
+    </code>
+
+    <code>
+        curl "https://api.openai.com/v1/chat/completions" \<br>
+            -H "Content-Type: application/json" \<br>
+            -H "Authorization: Bearer $OPENAI_API_KEY" \<br>
+            -d '{<br>
+                "model": "gpt-4o",<br>
+                "messages": [<br>
+                    { "role": "developer", "content": "You are a helpful assistant." },<br>
+                    { "role": "user", "content": "Write a haiku about recursion in programming." }<br>
+                ]<br>
+            }'
+    </code>
+
+    <h3>Analyze an image</h3>
+    <p>Describe the contents of an image</p>
+    <code>
+        import OpenAI from "openai";<br>
+        const openai = new OpenAI();<br><br>
+        const completion = await openai.chat.completions.create({<br>
+            model: "gpt-4o",<br>
+            messages: [<br>
+                {<br>
+                    role: "user",<br>
+                    content: [<br>
+                        { type: "text", text: "What's in this image?" },<br>
+                        {<br>
+                            type: "image_url",<br>
+                            image_url: {<br>
+                                "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/2560px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg",<br>
+                            },<br>
+                        }<br>
+                    ],<br>
+                },<br>
+            ],<br>
+        });<br><br>
+        console.log(completion.choices[0].message);
+    </code>
+
+    <code>
+        from openai import OpenAI<br>
+        client = OpenAI()<br><br>
+        completion = client.chat.completions.create(<br>
+            model="gpt-4o",<br>
+            messages=[<br>
+                {<br>
+                    "role": "user",<br>
+                    "content": [<br>
+                        { "type": "text", "text": "What's in this image?" },<br>
+                        {<br>
+                            "type": "image_url",<br>
+                            "image_url": {<br>
+                                "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/2560px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg",<br>
+                            }<br>
+                        },<br>
+                    ],<br>
+                }<br>
+            ],<br>
+        )<br><br>
+        print(completion.choices[0].message)
+    </code>
+
+    <code>
+        curl https://api.openai.com/v1/chat/completions \<br>
+          -H "Content-Type: application/json" \<br>
+          -H "Authorization: Bearer $OPENAI_API_KEY" \<br>
+          -d '{<br>
+            "model": "gpt-4o",<br>
+            "messages": [<br>
+              {<br>
+                "role": "user",<br>
+                "content": [<br>
+                  {<br>
+                    "type": "text",<br>
+                    "text": "What is in this image?"<br>
+                  },<br>
+                  {<br>
+                    "type": "image_url",<br>
+                    "image_url": {<br>
+                      "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/2560px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg"<br>
+                    }<br>
+                  }<br>
+                ]<br>
+              }<br>
+            ]<br>
+          }'
+    </code>
+
+    <h3>Generate JSON data</h3>
+    <p>Generate JSON data based on a JSON Schema</p>
+    <code>
+        import OpenAI from "openai";<br>
+        const openai = new OpenAI();<br><br>
+        const completion = await openai.chat.completions.create({<br>
+            model: "gpt-4o-2024-08-06",<br>
+            messages: [<br>
+                { role: "developer", content: "You extract email addresses into JSON data." },<br>
+                { role: "user", content: "Feeling stuck? Send a message to help@mycompany.com." },<br>
+            ],<br>
+            response_format: {<br>
+                type: "json_schema",<br>
+                json_schema: {<br>
+                    name: "email_schema",<br>
+                    schema: {<br>
+                        type: "object",<br>
+                        properties: {<br>
+                            email: {<br>
+                                description: "The email address that appears in the input",<br>
+                                type: "string"<br>
+                            }<br>
+                        },<br>
+                        additionalProperties: false<br>
+                    }<br>
+                }<br>
+            }<br>
+        });<br><br>
+        console.log(completion.choices[0].message.content);
+    </code>
+    <h3>Python Example</h3>
+    <pre><code>from openai import OpenAI
+client = OpenAI()
+
+response = client.chat.completions.create(
+    model="gpt-4o-2024-08-06",
+    messages=[
+        {
+            "role": "developer", 
+            "content": "You extract email addresses into JSON data."
+        },
+        {
+            "role": "user", 
+            "content": "Feeling stuck? Send a message to help@mycompany.com."
+        }
+    ],
+    response_format={
+        "type": "json_schema",
+        "json_schema": {
+            "name": "email_schema",
+            "schema": {
+                "type": "object",
+                "properties": {
+                    "email": {
+                        "description": "The email address that appears in the input",
+                        "type": "string"
+                    },
+                    "additionalProperties": False
+                }
+            }
+        }
+    }
+)
+
+print(response.choices[0].message.content);</code></pre>
+
+    <h3>cURL Example</h3>
+    <pre><code>curl https://api.openai.com/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $OPENAI_API_KEY" \
+  -d '{
+    "model": "gpt-4o-2024-08-06",
+    "messages": [
+      {
+        "role": "developer",
+        "content": "You extract email addresses into JSON data."
+      },
+      {
+        "role": "user",
+        "content": "Feeling stuck? Send a message to help@mycompany.com."
+      }
+    ],
+    "response_format": {
+      "type": "json_schema",
+      "json_schema": {
+        "name": "email_schema",
+        "schema": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "description": "The email address that appears in the input",
+                    "type": "string"
+                }
+            },
+            "additionalProperties": false
+        }
+      }
+    }
+  }'</code></pre>
+
+    <h2>Choosing a Model</h2>
+    <p>When making a text generation request, the first option to configure is which <a href="/docs/models">model</a> you want to generate the response. The model you choose can greatly influence the output and impact how much each generation request <a href="https://openai.com/api/pricing/">costs</a>.</p>
+    <ul>
+        <li>A <strong>large model</strong> like <a href="/docs/models#gpt-4o">gpt-4o</a> will offer a very high level of intelligence and strong performance, while having a higher cost per token.</li>
+        <li>A <strong>small model</strong> like <a href="/docs/models#gpt-4o-mini">gpt-4o-mini</a> offers intelligence not quite on the level of the larger model, but is faster and less expensive per token.</li>
+        <li>A <strong>reasoning model</strong> like the <a href="/docs/models#o1">o1 family of models</a> is slower to return a result and uses more tokens to "think", but is capable of advanced reasoning, coding, and multi-step planning.</li>
+    </ul>
+    <p>Experiment with different models <a href="/playground">in the Playground</a> to see which one works best for your prompts! More information on choosing a model can <a href="/docs/guides/model-selection">also be found here</a>.</p>
+
+    <h1>Building Prompts</h1>
+
+<p>The process of crafting prompts to get the right output from a model is called <strong>prompt engineering</strong>. By giving the model precise instructions, examples, and necessary context information (like private or specialized information that wasn't included in the model's training data), you can improve the quality and accuracy of the model's output. Here, we'll get into some high-level guidance on building prompts, but you might also find the <a href="/docs/guides/prompt-engineering">prompt engineering guide</a> helpful.</p>
+
+<p>In the <a href="/docs/api-reference/chat/">chat completions</a> API, you create prompts by providing an array of <code id = "short_code">messages</code> that contain instructions for the model. Each message can have a different <code id = "short_code">role</code>, which influences how the model might interpret the input.</p>
+
+<h2>User Messages</h2>
+
+<p>User messages contain instructions that request a particular type of output from the model. You can think of <code id = "short_code">user</code> messages as the messages you might type in to <a href="https://chatgpt.com">ChatGPT</a> as an end user.</p>
+
+<p>Here's an example of a user message prompt that asks the <code id = "short_code">gpt-4o</code> model to generate a haiku poem based on a prompt:</p>
+
+<pre><code class="javascript">const response = await openai.chat.completions.create({
+  model: "gpt-4o",
+  messages: [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "Write a haiku about programming."
+        }
+      ]
+    }
+  ]
+});</code></pre>
+
+<h2>Developer Messages</h2>
+
+<p>Messages with the <code id = "short_code">developer</code> role provide instructions to the model that are prioritized ahead of user messages, as described in the <a href="https://cdn.openai.com/spec/model-spec-2024-05-08.html#follow-the-chain-of-command">chain of command section in the model spec</a>. They typically describe how the model should generally behave and respond. This message role used to be called the <code id = "short_code">system</code> prompt, but it has been renamed to more accurately describe its place in the instruction-following hierarchy.</p>
+
+<p>Here's an example of a developer message that modifies the behavior of the model when generating a response to a <code id = "short_code">user</code> message:</p>
+
+<pre><code class="javascript">const response = await openai.chat.completions.create({
+  model: "gpt-4o",
+  messages: [
+    {
+      "role": "developer",
+      "content": "You are an assistant that provides detailed and informative responses."
+    },
+    {
+      "role": "user",
+      "content": "Explain the concept of recursion."
+    }
+  ]
+});</code></pre>
+
+<h1>Building Prompts</h1>
+
+<p>The process of crafting prompts to get the right output from a model is called <strong>prompt engineering</strong>. By giving the model precise instructions, examples, and necessary context information (like private or specialized information that wasn't included in the model's training data), you can improve the quality and accuracy of the model's output. Here, we'll get into some high-level guidance on building prompts, but you might also find the <a href="/docs/guides/prompt-engineering">prompt engineering guide</a> helpful.</p>
+
+<p>In the <a href="/docs/api-reference/chat/">chat completions</a> API, you create prompts by providing an array of <code id="short_code">messages</code> that contain instructions for the model. Each message can have a different <code id = "short_code">role</code>, which influences how the model might interpret the input.</p>
+
+<h2>User Messages</h2>
+
+<p>User messages contain instructions that request a particular type of output from the model. You can think of <code id = "short_code">user</code> messages as the messages you might type in to <a href="https://chatgpt.com">ChatGPT</a> as an end user.</p>
+
+<p>Here's an example of a user message prompt that asks the <code id = "short_code">gpt-4o</code> model to generate a haiku poem based on a prompt:</p>
+
+<pre><code class="javascript">const response = await openai.chat.completions.create({
+  model: "gpt-4o",
+  messages: [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "Write a haiku about programming."
+        }
+      ]
+    }
+  ]
+});</code></pre>
+
+<h2>Developer Messages</h2>
+
+<p>Messages with the <code id = "short_code">developer</code> role provide instructions to the model that are prioritized ahead of user messages, as described in the <a href="https://cdn.openai.com/spec/model-spec-2024-05-08.html#follow-the-chain-of-command">chain of command section in the model spec</a>. They typically describe how the model should generally behave and respond. This message role used to be called the <code id = "short_code">system</code> prompt, but it has been renamed to more accurately describe its place in the instruction-following hierarchy.</p>
+
+<p>Here's an example of a developer message that modifies the behavior of the model when generating a response to a user message:</p>
+
+<pre><code class="javascript">const response = await openai.chat.completions.create({
+  model: "gpt-4o",
+  messages: [
+    {
+      "role": "developer",
+      "content": [
+        {
+          "type": "text",
+          "text": `
+            You are a helpful assistant that answers programming 
+            questions in the style of a southern belle from the 
+            southeast United States.
+          `
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "Are semicolons optional in JavaScript?"
+        }
+      ]
+    }
+  ]
+});</code></pre>
+
+<p>This prompt returns a text output in the rhetorical style requested:</p>
+
+<pre><code>Well, sugar, that's a fine question you've got there! Now, in the 
+world of JavaScript, semicolons are indeed a bit like the pearls 
+on a necklace – you might slip by without 'em, but you sure do look 
+more polished with 'em in place. 
+
+Technically, JavaScript has this little thing called "automatic 
+semicolon insertion" where it kindly adds semicolons for you 
+where it thinks they oughta go. However, it's not always perfect, 
+bless its heart. </code></pre>
+
+<h2>Assistant Messages</h2>
+
+<p>Messages with the <code id = "short_code">assistant</code> role are presumed to have been generated by the model, perhaps in a previous generation request (see the "Conversations" section below). They can also be used to provide examples to the model for how it should respond to the current request - a technique known as <strong>few-shot learning</strong>.</p>
+
+<p>Here's an example of using an assistant message to capture the results of a previous text generation result, and making a new request based on that:</p>
+
+<pre><code class="javascript">const response = await openai.chat.completions.create({
+  model: "gpt-4o",
+  messages: [
+    {
+      "role": "user",
+      "content": [{ "type": "text", "text": "knock knock." }]
+    },
+    {
+      "role": "assistant",
+      "content": [{ "type": "text", "text": "Who's there?" }]
+    },
+    {
+      "role": "user",
+      "content": [{ "type": "text", "text": "Orange." }]
+    }
+  ]
+});</code></pre>
+
+<h2>Giving the Model Additional Data to Use for Generation</h2>
+
+<h1>Text Generation Techniques</h1>
+
+<p>The message types above can also be used to provide additional information to the model which may be outside its training data. You might want to include the results of a database query, a text document, or other resources to help the model generate a relevant response. This technique is often referred to as <strong>retrieval augmented generation</strong>, or RAG. <a href="https://help.openai.com/en/articles/8868588-retrieval-augmented-generation-rag-and-semantic-search-for-gpts">Learn more about RAG techniques here</a>.</p>
+
+<h2>Conversations and Context</h2>
+
+<p>While each text generation request is independent and stateless (unless you are using <a href="/docs/assistants/overview">assistants</a>), you can still implement <strong>multi-turn conversations</strong> by providing additional messages as parameters to your text generation request. Consider the "knock knock" joke example shown above:</p>
+
+<pre><code class="javascript">const response = await openai.chat.completions.create({
+  model: "gpt-4o",
+  messages: [
+    {
+      "role": "user",
+      "content": [{ "type": "text", "text": "knock knock." }]
+    },
+    {
+      "role": "assistant",
+      "content": [{ "type": "text", "text": "Who's there?" }]
+    },
+    {
+      "role": "user",
+      "content": [{ "type": "text", "text": "Orange." }]
+    }
+  ]
+});</code></pre>
+
+<p>By using alternating <code>user</code> and <code>assistant</code> messages, you can capture the previous state of a conversation in one request to the model.</p>
+
+<h3>Managing Context for Text Generation</h3>
+
+<p>As your inputs become more complex, or you include more and more turns in a conversation, you will need to consider both <strong>output token</strong> and <strong>context window</strong> limits. Model inputs and outputs are metered in <a href="https://help.openai.com/en/articles/4936856-what-are-tokens-and-how-to-count-them"><strong>tokens</strong></a>, which are parsed from inputs to analyze their content and intent, and assembled to render logical outputs. Models have limits on how many tokens can be used during the lifecycle of a text generation request.</p>
+
+<ul>
+    <li><strong>Output tokens:</strong> These are the tokens generated by a model in response to a prompt. Each model supports different limits for output tokens, <a href="/docs/models">documented here</a>. For example, <code>gpt-4o-2024-08-06</code> can generate a maximum of 16,384 output tokens.</li>
+    <li><strong>A context window:</strong> This describes the total tokens that can be used for both input tokens and output tokens (and for some models, <a href="/docs/guides/reasoning">reasoning tokens</a>), <a href="/docs/models">documented here</a>. For example, <code>gpt-4o-2024-08-06</code> has a total context window of 128k tokens.</li>
+</ul>
+
+<p>If you create a very large prompt (usually by including a lot of conversation context or additional data/examples for the model), you run the risk of exceeding the allocated context window for a model, which might result in truncated outputs.</p>
+
+<p>You can use the <a href="/tokenizer">tokenizer tool</a> (which uses the <a href="https://github.com/openai/tiktoken">tiktoken library</a>) to see how many tokens are present in a string of text.</p>
+
+<h2>Optimizing Model Outputs</h2>
+
+<p>As you iterate on your prompts, you will be continually trying to improve <strong>accuracy</strong>, <strong>cost</strong>, and <strong>latency</strong>.</p>
+
+<table>
+    <tr>
+        <th>Aspect</th>
+        <th>Description</th>
+    </tr>
+    <tr>
+        <td><strong>Accuracy</strong></td>
+        <td>Ensure the model produces accurate and useful responses to your prompts. Accurate responses require that the model has all the information it needs to generate a response, and knows how to go about creating a response (from interpreting input to formatting and styling). Often, this will require a mix of prompt engineering, RAG, and model fine-tuning. <a href="#">Learn about optimizing for accuracy here.</a></td>
+    </tr>
+    <tr>
+        <td><strong>Cost</strong></td>
+        <td>Drive down the total cost of model usage by reducing token usage and using cheaper models when possible. To control costs, you can try to use fewer tokens or smaller, cheaper models. <a href="#">Learn more about optimizing for cost here.</a></td>
+    </tr>
+    <tr>
+        <td><strong>Latency</strong></td>
+        <td>Decrease the time it takes to generate responses to your prompts. Optimizing latency is a multi-faceted process including prompt engineering, parallelism in your own code, and more. <a href="#">Learn more here.</a></td>
+    </tr>
+</table>
+
+<h2 class="next-steps">Next Steps</h2>
+
+<p>There's much more to explore in text generation - here's a few resources to go even deeper.</p>
+
+<ul>
+    <li><a href="/docs/examples">Prompt examples</a> - Get inspired by example prompts for a variety of use cases.</li>
+    <li><a href="/playground">Build a prompt in the Playground</a> - Use the Playground to develop and iterate on prompts.</li>
+    <li><a href="/docs/guides/https://cookbook.openai.com">Browse the Cookbook</a> - The Cookbook has complex examples covering a variety of use cases.</li>
+    <li><a href="/docs/guides/structured-outputs">Generate JSON data with Structured Outputs</a> - Ensure JSON data emitted from a model conforms to a JSON schema.</li>
+    <li><a href="/docs/api-reference/chat">Full API reference</a> - Check out all the options for text generation in the API reference.</li>
+</ul>
+
+
+</body>
+</html>

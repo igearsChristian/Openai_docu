@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Developer Quickstart</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+            padding: 0;
+        }
+        h1, h2 {
+            color: #2c3e50;
+        }
+        pre {
+            background-color: #f4f4f4;
+            padding: 15px;
+            border: 1px solid #ddd;
+            overflow: auto;
+        }
+        a {
+            color: #3498db;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Developer quickstart</h1>
+<p>Learn how to make your first API request.</p>
+<p>The OpenAI API provides a simple interface to state-of-the-art AI <a href="/docs/models">models</a> for natural language processing, image generation, semantic search, and speech recognition. Follow this guide to learn how to generate human-like responses to <a href="/docs/guides/text-generation">natural language prompts</a>, <a href="/docs/guides/embeddings">create vector embeddings</a> for semantic search, and <a href="/docs/guides/images">generate images</a> from textual descriptions.</p>
+
+<h2>Create and export an API key</h2>
+<p><a href="/api-keys">Create an API key in the dashboard here</a>, which you’ll use to securely <a href="/docs/api-reference/authentication">access the API</a>. Store the key in a safe location, like a <code>.zshrc</code> file or another text file on your computer. Once you’ve generated an API key, export it as an <a href="https://en.wikipedia.org/wiki/Environment_variable">environment variable</a> in your terminal.</p>
+
+<h3>macOS / Linux</h3>
+<pre><code>export OPENAI_API_KEY="your_api_key_here"</code></pre>
+
+<h3>Windows</h3>
+<pre><code>setx OPENAI_API_KEY "your_api_key_here"</code></pre>
+
+<h2>Make your first API request</h2>
+<p>With your OpenAI API key exported as an environment variable, you're ready to make your first API request. You can either use the <a href="/docs/api-reference">REST API</a> directly with the HTTP client of your choice, or use one of our <a href="/docs/libraries">official SDKs</a> as shown below.</p>
+
+<h3>JavaScript</h3>
+<p>To use the OpenAI API in server-side JavaScript environments like Node.js, Deno, or Bun, you can use the official <a href="https://github.com/openai/openai-node">OpenAI SDK for TypeScript and JavaScript</a>. Get started by installing the SDK using <a href="https://www.npmjs.com/">npm</a> or your preferred package manager:</p>
+<pre><code>npm install openai</code></pre>
+
+<p>With the OpenAI SDK installed, create a file called <code>example.mjs</code> and copy one of the following examples into it:</p>
+
+<h4>Generate text</h4>
+<pre><code>import OpenAI from "openai";
+const openai = new OpenAI();
+
+const completion = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [
+        { role: "system", content: "You are a helpful assistant." },
+        {
+            role: "user",
+            content: "Write a haiku about recursion in programming.",
+        },
+    ],
+});
+
+console.log(completion.choices[0].message);</code></pre>
+
+<h4>Generate an image</h4>
+<pre><code>import OpenAI from "openai";
+const openai = new OpenAI();
+
+const image = await openai.images.generate({ prompt: "A cute baby sea otter" });
+
+console.log(image.data[0].url);</code></pre>
+
+<h4>Create vector embeddings</h4>
+<pre><code>import OpenAI from "openai";
+const openai = new OpenAI();
+
+const embedding = await openai.embeddings.create({
+    model: "text-embedding-3-large",
+    input: "The quick brown fox jumped over the lazy dog",
+});
+
+console.log(embedding);</code></pre>
+
+<p>Execute the code with <code>node example.mjs</code> (or the equivalent command for Deno or Bun). In a few moments, you should see the output of your API request!</p>
+
+<h3>Python</h3>
+<p>To use the OpenAI API in Python, you can use the official <a href="https://github.com/openai/openai-python">OpenAI SDK for Python</a>. Get started by installing the SDK using <a href="https://pypi.org/project/pip/">pip</a>:</p>
+<pre><code>pip install openai</code></pre>
+
+<p>With the OpenAI SDK installed, create a file called <code>example.py</code> and copy one of the following examples into it:</p>
+
+<h4>Generate text</h4>
+<pre><code>from openai import OpenAI
+client = OpenAI()
+
+completion = client.chat.completions.create(
+    model="gpt-4o-mini",
+    messages=[
+        {"role": "system", "content": "You are a helpful assistant."},
+        {
+            "role": "user",
+            "content": "Write a haiku about recursion in programming."
+        }
+    ]
+)
+
+print(completion.choices[0].message)</code></pre>
+
+<h4>Generate an image</h4>
+<pre><code>from openai import OpenAI
+client = OpenAI()
+
+response = client.images.generate(
+    prompt="A cute baby sea otter",
+    n=2,
+    size="1024x1024"
+)
+
+print(response.data[0].url)</code></pre>
+
+<h4>Create vector embeddings</h4>
+<pre><code>from openai import OpenAI
+client = OpenAI()
+
+response = client.embeddings.create(
+    model="text-embedding-3-large",
+    input="The food was delicious and the waiter..."
+)
+
+print(response)</code></pre>
+
+<p>Execute the code with <code>python example.py</code>. In a few moments, you should see the output of your API request!</p>
+
+<h3>curl</h3>
+<p>On Unix-based systems, you can test out the <a href="/docs/api-reference">OpenAI REST API</a> using <a href="https://curl.se/">curl</a>. The following commands assume that you have exported the <code>OPENAI_API_KEY</code> system environment variable as shown above.</p>
+
+<h4>Generate text</h4>
+<pre><code>curl "https://api.openai.com/v1/chat/completions" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $OPENAI_API_KEY" \
+    -d '{
+        "model": "gpt-4o-mini",
+        "messages": [
+            {
+                "role": "system",
+                "content": "You are a helpful assistant."
+            },
+            {
+                "role": "user",
+                "content": "Write a haiku that explains the concept of recursion."
+            }
+        ]
+    }'</code></pre>
+
+<h4>Generate an image</h4>
+<pre><code>curl "https://api.openai.com/v1/images/generations" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $OPENAI_API_KEY" \
+    -d '{
+        "prompt": "A cute baby sea otter",
+        "n": 2,
+        "size": "1024x1024"
+    }'</code></pre>
+
+<h4>Create vector embeddings</h4>
+<pre><code>curl "https://api.openai.com/v1/embeddings" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $OPENAI_API_KEY" \
+    -d '{
+        "input": "The food was delicious and the waiter...",
+        "model": "text-embedding-3-large"
+    }'</code></pre>
+
+<p>Execute the curl commands above in your terminal. In a few moments, you should see the output of your API request!</p>
+
+<h2>Next steps</h2>
+<p>Now that you've made your first OpenAI API request, you can explore the following resources:</p>
+<ul>
+    <li><a href="/docs/guides/text-generation">Chat Completions</a></li>
+    <li><a href="/docs/guides/images">Image Generation</a></li>
+    <li><a href="/docs/guides/embeddings">Embeddings</a></li>
+    <li><a href="/docs/guides/text-to-speech">Text-to-speech</a></li>
+    <li><a href="/docs/guides/speech-to-text">Speech-to-text</a></li>
+    <li><a href="/docs/guides/moderation">Moderation</a></li>
+    <li><a href="/docs/guides/fine-tuning">Fine-tuning</a></li>
+    <li><a href="/docs/guides/batch">Batch</a></li>
+    <li><a href="/docs/api-reference">Full API Reference</a></li>
+</ul>
+
+</body>
+</html>
