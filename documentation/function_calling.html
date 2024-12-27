@@ -1,0 +1,1984 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Function Calling Documentation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+        }
+        code {
+            background-color: #f4f4f4;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+        pre {
+            background-color: #f4f4f4;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        h1, h2, h3 {
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Function calling</h1>
+<h2>Connect models to external data and systems.</h2>
+
+<p><strong>Function calling</strong> enables developers to connect language models to external data and systems. You can define a set of functions as tools that the model has access to, and it can use them when appropriate based on the conversation history. You can then execute those functions on the application side, and provide results back to the model.</p>
+
+<p>Learn how to extend the capabilities of OpenAI models through function calling in this guide.</p>
+
+<h2>Experiment with function calling in the <a href="/playground">Playground</a> by providing your own function definition or generate a ready-to-use definition.</h2>
+
+<h3>Generate</h3>
+<h4>Overview</h4>
+
+<p>Many applications require models to call custom functions to trigger actions within the application or interact with external systems.</p>
+
+<p>Here is how you can define a function as a tool for the model to use:</p>
+
+<pre><code class="language-python">from openai import OpenAI
+
+client = OpenAI()
+
+tools = [
+  {
+      "type": "function",
+      "function": {
+          "name": "get_weather",
+          "parameters": {
+              "type": "object",
+              "properties": {
+                  "location": {"type": "string"}
+              },
+          },
+      },
+  }
+]
+
+completion = client.chat.completions.create(
+  model="gpt-4o",
+  messages=[{"role": "user", "content": "What's the weather like in Paris today?"}],
+  tools=tools,
+)
+
+print(completion.choices[0].message.tool_calls)
+</code></pre>
+
+<pre><code class="language-javascript">import { OpenAI } from "openai";
+const openai = new OpenAI();
+
+const tools = [
+  {
+      type: "function",
+      function: {
+          name: "get_weather",
+          parameters: {
+              type: "object",
+              properties: {
+                  location: { type: "string" }
+              },
+          },
+      },
+  }
+];
+
+const response = await openai.chat.completions.create({
+  model: "gpt-4o",
+  messages: [{"role": "user", "content": "What's the weather like in Paris today?"}],
+  tools,
+});
+
+console.log(response.choices[0].message.tool_calls);
+</code></pre>
+
+<p>This will return a function call that looks like this:</p>
+
+<pre><code class="language-json">[
+  {
+    "id": "call_12345xyz",
+    "type": "function",
+    "function": { "name": "get_weather", "arguments": "{'location':'Paris'}" }
+  }
+]</code></pre>
+
+<p>Functions are the only type of tools supported in the Chat Completions API, but the Assistants API also supports <a href="/docs/assistants/tools">built-in tools</a>.</p>
+
+<h4>Here are a few examples where function calling can be useful:</h4>
+<ol>
+    <li><strong>Fetching data:</strong> enable a conversational assistant to retrieve data from internal systems before responding to the user.</li>
+    <li><strong>Taking action:</strong> allow an assistant to trigger actions based on the conversation, like scheduling meetings or initiating order returns.</li>
+    <li><strong>Building rich workflows:</strong> allow assistants to execute multi-step workflows, like data extraction pipelines or content personalization.</li>
+    <li><strong>Interacting with Application UIs:</strong> use function calls to update the user interface based on user input, like rendering a pin on a map or navigating a website.</li>
+</ol>
+
+<p>You can find example use cases in the <a href="#examples">examples</a> section below.</p>
+
+<h3>The lifecycle of a function call</h3>
+
+<p>When you use the OpenAI API with function calling, the model never actually executes functions itself - instead, it simply generates parameters that can be used to call your function. You are then responsible for handling how the function is executed in your code.</p>
+
+<p>Read our <a href="#integration-guide">integration guide</a> below for more details on how to handle function calls.</p>
+
+<img src="https://cdn.openai.com/API/docs/images/function-calling-diagram.png" style="width: 50%; max-width: 600px; height: auto;">
+
+<h3>Function calling support</h3>
+
+<p>Function calling is supported in the <a href="/docs/guides/text-generation">Chat Completions API</a>, <a href="/docs/assistants/overview">Assistants API</a>, <a href="/docs/guides/batch">Batch API</a> and <a href="/docs/guides/realtime">Realtime API</a>.</p>
+
+<p>This guide focuses on function calling using the Chat Completions API. We have separate guides for <a href="/docs/assistants/tools/function-calling">function calling using the Assistants API</a>, and for <a href="/docs/guides/realtime#tool-calling">function calling using the Realtime API</a>.</p>
+
+<h3>Models supporting function calling</h3>
+
+<p>Function calling was introduced with the release of <code>gpt-4-turbo</code> on June 13, 2023. All <code>gpt-* </code> models released after this date support function calling.</p>
+
+<p>Legacy models released before this date were not trained to support function calling.</p>
+
+<h4>Support for parallel function calling</h4>
+
+<p>Parallel function calling is supported on models released on or after Nov 6, 2023. This includes: <code>gpt-4o</code>, <code>gpt-4o-2024-08-06</code>, <code>gpt-4o-2024-05-13</code>, <code>gpt-4o-mini</code>, <code>gpt-4o-mini-2024-07-18</code>, <code>gpt-4-turbo</code>, <code>gpt-4-turbo-2024-04-09</code>, <code>gpt-4-turbo-preview</code>, <code>gpt-4-0125-preview</code>, <code>gpt-4-1106-preview</code>, <code>gpt-3.5-turbo</code>, <code>gpt-3.5-turbo-0125</code>, and <code>gpt-3.5-turbo-1106</code>.</p>
+
+<p>You can find a complete list of models and their release date on our <a href="/docs/models">models page</a>.</p>
+
+<h3>Integration guide</h3>
+
+<p>In this integration guide, we will walk through integrating function calling into an application, taking an order delivery assistant as an example. Rather than requiring users to interact with a form, we can let them ask the assistant for help in natural language.</p>
+
+<p>We will cover how to define functions and instructions, then how to handle model responses and function execution results.</p>
+
+<p>If you want to learn more about how to handle function calls in a streaming fashion, how to customize tool calling behavior or how to handle edge cases, refer to our <a href="#advanced-usage">advanced usage</a> section.</p>
+
+<h3>Function definition</h3>
+
+<p>The starting point for function calling is choosing a function in your own codebase that you'd like to enable the model to generate arguments for.</p>
+
+<p>For this example, let's imagine you want to allow the model to call the <code>get_delivery_date</code> function in your codebase which accepts an <code>order_id</code> and queries your database to determine the delivery date for a given package. Your function might look something like the following:</p>
+
+<h2>Python Function</h2>
+<pre>
+def get_delivery_date(order_id: str) -> datetime:
+    # Connect to the database
+    conn = sqlite3.connect('ecommerce.db')
+    cursor = conn.cursor()
+    # ...
+</pre>
+
+<h2>JavaScript Function</h2>
+<pre>
+const getDeliveryDate = async (orderId: string): datetime => {
+    const connection = await createConnection({
+        host: 'localhost',
+        user: 'root',
+        // ...
+    });
+}
+</pre>
+
+<p>Now that we know which function we wish to allow the model to call, we will create a “function definition” that describes the function to the model. This definition describes both what the function does (and potentially when it should be called) and what parameters are required to call the function.</p>
+
+<p>The parameters section of your function definition should be described using JSON Schema. If and when the model generates a function call, it will use this information to generate arguments according to your provided schema.</p>
+
+<p>If you want to ensure the model always adheres to your supplied schema, you can enable Structured Outputs with function calling.</p>
+
+<p>In this example it may look like this:</p>
+
+<h2>JSON Schema Example</h2>
+<pre>
+{
+    "name": "get_delivery_date",
+    "description": "Get the delivery date for a customer's order. Call this whenever you need to know the delivery date, for example when a customer asks 'Where is my package'",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "order_id": {
+                "type": "string",
+                "description": "The customer's order ID."
+            }
+        },
+        "required": ["order_id"],
+        "additionalProperties": false
+    }
+}
+</pre>
+
+<p>Next we need to provide our function definitions within an array of available “tools” when calling the Chat Completions API.</p>
+
+<p>As always, we will provide an array of “messages”, which could for example contain your prompt or a back and forth conversation between the user and an assistant.</p>
+
+<p>This example shows how you may call the Chat Completions API providing relevant tools and messages for an assistant that handles customer inquiries for a store.</p>
+
+<h2>Tools Array Example</h2>
+<pre>
+tools = [
+    {
+        "type": "function",
+        "function": {
+            "name": "get_delivery_date",
+            "description": "Get the delivery date for a customer's order. Call this whenever you need to know the delivery date, for example when a customer asks 'Where is my package'",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "order_id": {
+                        "type": "string",
+                        "description": "The customer's order ID."
+                    }
+                },
+                "required": ["order_id"],
+                "additionalProperties": false
+            }
+        }
+    }
+]
+</pre>
+
+<h2>Messages Array Example</h2>
+<pre>
+messages = [
+    {
+        "role": "system",
+        "content": "You are a helpful customer support assistant. Use the supplied tools to assist the user."
+    },
+    {
+        "role": "user",
+        "content": "Hi, can you tell me the delivery date for my order?"
+    }
+]
+</pre>
+
+<h2>API Call Example</h2>
+<pre>
+response = openai.chat.completions.create(
+    model="gpt-4o",
+    messages=messages,
+    tools=tools,
+)
+</pre>
+
+<h2>Model Instructions</h2>
+<p>While you should define in the function definitions how to call them, we recommend including instructions regarding when to call functions in the system prompt.</p>
+
+<p>For example, you can tell the model when to use the function by saying something like: <br><code>"Use the 'get_delivery_date' function when the user asks about their delivery date."</code></p>
+
+<h2>Handling Model Responses</h2>
+<p>The model only suggests function calls and generates arguments for the defined functions when appropriate. It is then up to you to decide how your application handles the execution of the functions based on these suggestions.</p>
+
+<p>If the model determines that a function should be called, it will return a <code>tool_calls</code> field in the response, which you can use to determine if the model generated a function call and what the arguments were.</p>
+
+<p>Unless you customize the tool calling behavior, the model will determine when to call functions based on the instructions and conversation.</p>
+
+<h2>If the Model Decides That No Function Should Be Called</h2>
+<p>If the model does not generate a function call, then the response will contain a direct reply to the user as a regular chat completion response.</p>
+
+<p>For example, in this case <code>chat_response.choices[0].message</code> may contain:</p>
+
+<h2>Example Response</h2>
+<pre>
+chat.completionsMessage(
+    content='Hi there! I can help with that. Can you please provide your order ID?',
+    role='assistant',
+    function_call=None,
+    tool_calls=None
+)
+</pre>
+
+<h2>JavaScript Example</h2>
+<pre>
+{
+    role: 'assistant',
+    content: "I'd be happy to help with that. Could you please provide me with your order ID?",
+}
+</pre>
+
+<p>In an assistant use case you will typically want to show this response to the user and let them respond to it, in which case you will call the API again (with both the latest responses from the assistant and user appended to the messages).</p>
+
+<p>Let's assume our user responded with their order id, and we sent the following request to the API.</p>
+
+<pre>
+tools = [
+    {
+        "type": "function",
+        "function": {
+            "name": "get_delivery_date",
+            "description": "Get the delivery date for a customer's order. Call this whenever you need to know the delivery date, for example when a customer asks 'Where is my package'",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "order_id": {
+                        "type": "string",
+                        "description": "The customer's order ID."
+                    }
+                },
+                "required": ["order_id"],
+                "additionalProperties": false
+            }
+        }
+    }
+]
+</pre>
+
+<pre>
+messages = []
+messages.append({"role": "system", "content": "You are a helpful customer support assistant. Use the supplied tools to assist the user."})
+messages.append({"role": "user", "content": "Hi, can you tell me the delivery date for my order?"})
+messages.append({"role": "assistant", "content": "Hi there! I can help with that. Can you please provide your order ID?"})
+messages.append({"role": "user", "content": "i think it is order_12345"})
+</pre>
+
+<h2>API Call Example</h2>
+<pre>
+response = client.chat.completions.create(
+    model='gpt-4o',
+    messages=messages,
+    tools=tools
+)
+</pre>
+
+<h2>JavaScript Example</h2>
+<pre>
+const tools = [
+    {
+        type: "function",
+        function: {
+            name: "get_delivery_date",
+            description: "Get the delivery date for a customer's order. Call this whenever you need to know the delivery date, for example when a customer asks 'Where is my package'",
+            parameters: {
+                type: "object",
+                properties: {
+                    order_id: {
+                        type: "string",
+                        description: "The customer's order ID."
+                    }
+                },
+                required: ["order_id"],
+                additionalProperties: false,
+            },
+        },
+    },
+];
+
+const messages = [];
+messages.push({ role: "system", content: "You are a helpful customer support assistant. Use the supplied tools to assist the user." });
+messages.push({ role: "user", content: "Hi, can you tell me the delivery date for my order?" });
+messages.push({ role: "assistant", content: "Hi there! I can help with that. Can you please provide your order ID?" });
+messages.push({ role: "user", content: "i think it is order_12345" });
+
+const response = await client.chat.completions.create({
+    model: 'gpt-4o',
+    messages,
+    tools,
+});
+</pre>
+
+<h2>If the Model Generated a Function Call</h2>
+<p>If the model generated a function call, it will generate the arguments for the call (based on the parameters definition you provided).</p>
+
+<p>Here is an example response showing this:</p>
+
+<h2>Example Response</h2>
+<pre>
+Choice(
+    finish_reason='tool_calls',
+    index=0,
+    logprobs=None,
+    message=chat.completionsMessage(
+        content=None,
+        role='assistant',
+        function_call=None,
+        tool_calls=[
+            chat.completionsMessageToolCall(
+                id='call_62136354',
+                function=Function(
+                    arguments='{"order_id":"order_12345"}',
+                    name='get_delivery_date'
+                ),
+                type='function'
+            )
+        ]
+    )
+)
+</pre>
+
+
+<pre>
+{
+  finish_reason: 'tool_calls',
+  index: 0,
+  logprobs: null,
+  message: {
+      content: null,
+      role: 'assistant',
+      function_call: null,
+      tool_calls: [
+          {
+              id: 'call_62136354',
+              function: {
+                  arguments: '{"order_id":"order_12345"}',
+                  name: 'get_delivery_date'
+              },
+              type: 'function'
+          }
+      ]
+  }
+}
+</pre>
+
+<h2>Handling the model response indicating that a function should be called</h2>
+
+<p>Assuming the response indicates that a function should be called, your code will now handle this:</p>
+
+<h3>Python Example</h3>
+<pre>
+# Extract the arguments for get_delivery_date
+# Note this code assumes we have already determined that the model generated a function call. See below for a more production ready example that shows how to check if the model generated a function call
+tool_call = response.choices[0].message.tool_calls[0]
+arguments = json.loads(tool_call['function']['arguments'])
+
+order_id = arguments.get('order_id')
+
+# Call the get_delivery_date function with the extracted order_id
+delivery_date = get_delivery_date(order_id)
+</pre>
+
+<h3>JavaScript Example</h3>
+<pre>
+// Extract the arguments for get_delivery_date
+// Note this code assumes we have already determined that the model generated a function call. See below for a more production ready example that shows how to check if the model generated a function call
+const toolCall = response.choices[0].message.tool_calls[0];
+const arguments = JSON.parse(toolCall.function.arguments);
+
+const order_id = arguments.order_id;
+
+// Call the get_delivery_date function with the extracted order_id
+const delivery_date = get_delivery_date(order_id);
+</pre>
+
+<h2>Submitting Function Output</h2>
+
+<p>Once the function has been executed in the code, you need to submit the result of the function call back to the model.</p>
+
+<p>This will trigger another model response, taking into account the function call result.</p>
+
+<h3>Python Example</h3>
+<pre>
+# Simulate the order_id and delivery_date
+order_id = "order_12345"
+delivery_date = datetime.now()
+
+# Simulate the tool call response
+response = {
+  "choices": [
+      {
+          "message": {
+              "role": "assistant",
+              "tool_calls": [
+                  {
+                      "id": "call_62136354",
+                      "type": "function",
+                      "function": {
+                          "arguments": "{'order_id': 'order_12345'}",
+                          "name": "get_delivery_date"
+                      }
+                  }
+              ]
+          }
+      }
+  ]
+}
+
+# Create a message containing the result of the function call
+function_call_result_message = {
+  "role": "tool",
+  "content": json.dumps({
+      "order_id": order_id,
+      "delivery_date": delivery_date.strftime('%Y-%m-%d %H:%M:%S')
+  }),
+  "tool_call_id": response['choices'][0]['message']['tool_calls'][0]['id']
+}
+
+# Prepare the chat completion call payload
+completion_payload = {
+  "model": "gpt-4o",
+  "messages": [
+      {"role": "system", "content": "You are a helpful customer support assistant. Use the supplied tools to assist the user."},
+      {"role": "user", "content": "Hi, can you tell me the delivery date for my order?"},
+      {"role": "assistant", "content": "Hi there! I can help with that. Can you please provide your order ID?"},
+      {"role": "user", "content": "i think it is order_12345"},
+      response['choices'][0]['message'],
+      function_call_result_message
+  ]
+}
+
+# Call the OpenAI API's chat completions endpoint to send the tool call result back to the model
+response = openai.chat.completions.create(
+  model=completion_payload["model"],
+  messages=completion_payload["messages"]
+)
+
+# Print the response from the API. In this case it will typically contain a message such as "The delivery date for your order #12345 is xyz. Is there anything else I can help you with?"
+print(response)
+</pre>
+
+<h3>JavaScript Example</h3>
+<pre>
+// Simulate the order_id and delivery_date
+const order_id = "order_12345";
+const delivery_date = moment();
+
+// Simulate the tool call response
+const response = {
+  choices: [
+      {
+          message: {
+              tool_calls: [
+                  { id: "tool_call_1" }
+              ]
+          }
+      }
+  ]
+};
+
+// Create a message containing the result of the function call
+const function_call_result_message = {
+  role: "tool",
+  content: JSON.stringify({
+      order_id: order_id,
+      delivery_date: delivery_date.format('YYYY-MM-DD HH:mm:ss')
+  }),
+  tool_call_id: response.choices[0].message.tool_calls[0].id
+};
+
+// Prepare the chat completion call payload
+const completion_payload = {
+  model: "gpt-4o",
+  messages: [
+      { role: "system", content: "You are a helpful customer support assistant. Use the supplied tools to assist the user." },
+      { role: "user", content: "Hi, can you tell me the delivery date for my order?" },
+      { role: "assistant", content: "Hi there! I can help with that. Can you please provide your order ID?" },
+      { role: "user", content: "i think it is order_12345" },
+      response.choices[0].message,
+      function_call_result_message
+  ]
+};
+
+// Call the OpenAI API's chat completions endpoint to send the tool call result back to the model
+const final_response = await openai.chat.completions.create({
+  model: completion_payload.model,
+  messages: completion_payload.messages
+});
+
+// Print the response from the API. In this case it will typically contain a message such as "The delivery date for your order #12345 is xyz. Is there anything else I can help you with?"
+console.log(final_response);
+</pre>
+
+<h2>Note on Assistant Messages</h2>
+<p>Note that an assistant message containing tool calls should always be followed by tool response messages (one per tool call). Making an API call with a messages array that does not follow this pattern will result in an error.</p>
+
+<h2>Structured Outputs</h2>
+<p>In August 2024, we launched Structured Outputs, which ensures that a model's output exactly matches a specified JSON schema.</p>
+
+<p>By default, when using function calling, the API will offer best-effort matching for your parameters, which means that occasionally the model may miss parameters or get their types wrong when using complicated schemas.</p>
+
+<p>You can enable Structured Outputs for function calling by setting the parameter <code>strict: true</code> in your function definition. You should also include the parameter <code>additionalProperties: false</code> and mark all arguments as required in your request. When this is enabled, the function arguments generated by the model will be constrained to match the JSON Schema provided in the function definition.</p>
+
+<p>As an alternative to function calling you can instead constrain the model's regular output to match a JSON Schema of your choosing. <a href="/docs/guides/structured-outputs#function-calling-vs-response-format">Learn more</a> about when to use function calling vs when to control the model's normal output by using <code>response_format</code>.</p>
+
+<h2>Parallel Function Calling and Structured Outputs</h2>
+<p>When the model outputs multiple function calls via parallel function calling, model outputs may not match strict schemas supplied in tools.</p>
+
+<p>In order to ensure strict schema adherence, disable parallel function calls by supplying <code>parallel_tool_calls: false</code>. With this setting, the model will generate one function call at a time.</p>
+
+<h2>Considerations for Not Using Structured Outputs</h2>
+<p>The main reasons to not use Structured Outputs are:</p>
+<ul>
+    <li>If you need to use some feature of JSON Schema that is not yet supported (<a href="/docs/guides/structured-outputs#supported-schemas">learn more</a>), for example recursive schemas.</li>
+    <li>If each of your API requests includes a novel schema (i.e. your schemas are not fixed, but are generated on-demand and rarely repeat). The first request with a novel JSON schema will have increased latency as the schema is pre-processed and cached for future generations to constrain the output of the model.</li>
+</ul>
+
+<h2>Zero Data Retention and Structured Outputs</h2>
+<p>What does Structured Outputs mean for Zero Data Retention?</p>
+<p>When Structured Outputs is turned on, schemas provided are not eligible for <a href="/docs/models#how-we-use-your-data">zero data retention</a>.</p>
+
+<h2>Supported Schemas</h2>
+<p>Function calling with Structured Outputs supports a subset of the JSON Schema language.</p>
+
+<p>For more information on supported schemas, see the <a href="/docs/guides/structured-outputs#supported-schemas">Structured Outputs guide</a>.</p>
+
+<h2>Example</h2>
+
+<p>You can use zod in NodeJS and Pydantic in Python when using the SDKs to pass your function definitions to the model.</p>
+
+<h2>JavaScript Example</h2>
+<pre>
+import OpenAI from "openai";
+import { z } from "zod";
+import { zodFunction } from "openai/helpers/zod";
+
+const OrderParameters = z.object({
+  order_id: z.string().describe("The customer's order ID."),
+});
+
+const tools = [
+  zodFunction({ name: "getDeliveryDate", parameters: OrderParameters }),
+];
+
+const messages = [
+  {
+    role: "system",
+    content: "You are a helpful customer support assistant. Use the supplied tools to assist the user.",
+  },
+  {
+    role: "user",
+    content: "Hi, can you tell me the delivery date for my order #12345?",
+  },
+];
+
+const openai = new OpenAI();
+
+const response = await openai.beta.chat.completions.create({
+  model: "gpt-4o-2024-08-06",
+  messages,
+  tools,
+});
+
+console.log(response.choices[0].message.tool_calls?.[0].function);
+</pre>
+
+<h2>Python Example</h2>
+<pre>
+from enum import Enum
+from typing import Union
+from pydantic import BaseModel
+import openai
+from openai import OpenAI
+
+client = OpenAI()
+
+class GetDeliveryDate(BaseModel):
+    order_id: str
+
+tools = [openai.pydantic_function_tool(GetDeliveryDate)]
+
+messages = []
+messages.append({"role": "system", "content": "You are a helpful customer support assistant. Use the supplied tools to assist the user."})
+messages.append({"role": "user", "content": "Hi, can you tell me the delivery date for my order #12345?"})
+
+response = client.beta.chat.completions.create(
+    model='gpt-4o-2024-08-06',
+    messages=messages,
+    tools=tools
+)
+
+print(response.choices[0].message.tool_calls[0].function)
+</pre>
+
+<h2>cURL Example</h2>
+<pre>
+curl https://api.openai.com/v1/chat/completions \
+    -H "Authorization: Bearer $OPENAI_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{
+        "model": "gpt-4o-2024-08-06",
+        "messages": [
+            {
+                "role": "system",
+                "content": "You are a helpful customer support assistant. Use the supplied tools to assist the user."
+            },
+            {
+                "role": "user",
+                "content": "Hi, can you tell me the delivery date for my order #12345?"
+            }
+        ],
+        "tools": [
+            {
+                "type": "function",
+                "function": {
+                    "name": "get_delivery_date",
+                    "description": "Get the delivery date for a customer’s order. Call this whenever you need to know the delivery date, for example when a customer asks \\"Where is my package\\"",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "order_id": {
+                                "type": "string",
+                                "description": "The customer’s order ID."
+                            }
+                        },
+                        "required": ["order_id"],
+                        "additionalProperties": false
+                    }
+                },
+                "strict": true
+            }
+        ]
+    }'
+</pre>
+
+<p>If you are not using the SDKs, add the <code>strict: true</code> parameter to your function definition. Additionally, all parameters must be included in the <code>required</code> array, and <code>additionalProperties: false</code> must be set.</p>
+
+<pre>
+{
+    "name": "get_delivery_date",
+    "description": "Get the delivery date for a customer's order. Call this whenever you need to know the delivery date, for example when a customer asks \\"Where is my package\\"",
+    "strict": true,
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "order_id": { "type": "string" }
+        },
+        "required": ["order_id"],
+        "additionalProperties": false
+    }
+}
+</pre>
+
+<h2>Limitations</h2>
+
+<p>When you use Structured Outputs with function calling, the model will always follow your exact schema, except in a few circumstances:</p>
+<ul>
+    <li>When the model's response is cut off (either due to <code>max_tokens</code>, <code>stop_tokens</code>, or maximum context length)</li>
+    <li>When a model <a href="/docs/guides/structured-outputs#refusals">refusal</a> happens</li>
+    <li>When there is a <code>content_filter</code> finish reason</li>
+</ul>
+
+<p>Note that the first time you send a request with a new schema using Structured Outputs, there will be additional latency as the schema is processed, but subsequent requests should incur no overhead.</p>
+
+<h1>Advanced usage</h1>
+
+<h2>Streaming Tool Calls</h2>
+
+<p>You can stream tool calls and process function arguments as they are being generated. This is especially useful if you want to display the function arguments in your UI, or if you don't need to wait for the whole function parameters to be generated before executing the function.</p>
+
+<p>To enable streaming tool calls, you can set <code>stream: true</code> in your request. You can then process the streaming delta and check for any new tool calls delta.</p>
+
+<p>You can find more information on streaming in the <a href="/docs/api-reference/streaming">API reference</a>.</p>
+
+<h2>Python Example</h2>
+<pre>
+from openai import OpenAI
+import json
+
+client = OpenAI()
+
+# Define functions
+tools = [
+  {
+      "type": "function",
+      "function": {
+          "name": "generate_recipe",
+          "description": "Generate a recipe based on the user's input",
+          "parameters": {
+              "type": "object",
+              "properties": {
+                  "title": {
+                      "type": "string",
+                      "description": "Title of the recipe.",
+                  },
+                  "ingredients": {
+                      "type": "array",
+                      "items": {"type": "string"},
+                      "description": "List of ingredients required for the recipe.",
+                  },
+                  "instructions": {
+                      "type": "array",
+                      "items": {"type": "string"},
+                      "description": "Step-by-step instructions for the recipe.",
+                  },
+              },
+              "required": ["title", "ingredients", "instructions"],
+              "additionalProperties": False,
+          },
+      },
+  }
+]
+
+response_stream = client.chat.completions.create(
+  model="gpt-4o",
+  messages=[
+      {
+          "role": "system",
+          "content": (
+              "You are an expert cook who can help turn any user input into a delicious recipe."
+              "As soon as the user tells you what they want, use the generate_recipe tool to create a detailed recipe for them."
+          ),
+      },
+      {
+          "role": "user",
+          "content": "I want to make pancakes for 4.",
+      },
+  ],
+  tools=tools,
+  stream=True,
+)
+
+function_arguments = ""
+function_name = ""
+is_collecting_function_args = False
+
+for part in response_stream:
+  delta = part.choices[0].delta
+  finish_reason = part.choices[0].finish_reason
+
+  # Process assistant content
+  if 'content' in delta:
+      print("Assistant:", delta.content)
+
+  if delta.tool_calls:
+      is_collecting_function_args = True
+      tool_call = delta.tool_calls[0]
+
+      if tool_call.function.name:
+          function_name = tool_call.function.name
+          print(f"Function name: '{function_name}'")
+      
+      # Process function arguments delta
+      if tool_call.function.arguments:
+          function_arguments += tool_call.function.arguments
+          print(f"Arguments: {function_arguments}")
+
+  # Process tool call with complete arguments
+  if finish_reason == "tool_calls" and is_collecting_function_args:
+      print(f"Function call '{function_name}' is complete.")
+      args = json.loads(function_arguments)
+      print("Complete function arguments:")
+      print(json.dumps(args, indent=2))
+   
+      # Reset for the next potential function call
+      function_arguments = ""
+      function_name = ""
+      is_collecting_function_args = False
+</pre>
+
+<h2>JavaScript Example</h2>
+<pre>
+import OpenAI from "openai";
+
+const openai = new OpenAI();
+
+// Define functions
+const tools = [
+{
+  type: "function",
+  function: {
+    name: "generate_recipe",
+    description: "Generate a recipe based on the user's input",
+    parameters: {
+      type: "object",
+      properties: {
+        title: {
+          type: "string",
+          description: "Title of the recipe.",
+        },
+        ingredients: {
+          type: "array",
+          items: { type: "string" },
+          description: "List of ingredients required for the recipe.",
+        },
+        instructions: {
+          type: "array",
+          items: { type: "string" },
+          description: "Step-by-step instructions for the recipe.",
+        },
+      },
+      required: ["title", "ingredients", "instructions"],
+      additionalProperties: false,
+    },
+  },
+},
+];
+
+const responseStream = await openai.chat.completions.create({
+model: "gpt-4o",
+messages: [
+  {
+    role: "system",
+    content:
+      "You are an expert cook who can help turn any user input into a delicious recipe. As soon as the user tells you what they want, use the generate_recipe tool to create a detailed recipe for them.",
+  },
+  {
+    role: "user",
+    content: "I want to make pancakes for 4.",
+  },
+],
+tools: tools,
+stream: true,
+});
+
+let functionArguments = "";
+let functionName = "";
+let isCollectingFunctionArgs = false;
+
+for await (const part of responseStream) {
+const delta = part.choices[0].delta;
+const finishReason = part.choices[0].finish_reason;
+
+if (delta.content) {
+  // Process assistant content
+  console.log("Assistant:", delta.content);
+}
+
+if (delta.tool_calls) {
+  isCollectingFunctionArgs = true;
+  const toolCall = delta.tool_calls[0];
+
+  if (toolCall.function?.name) {
+    functionName = toolCall.function.name;
+    console.log("Function name:", functionName);
+  }
+
+  if (toolCall.function?.arguments) {
+    functionArguments += toolCall.function.arguments;
+    // Process function arguments delta
+    console.log(`Arguments: ${functionArguments}`);
+  }
+}
+
+// Process tool call with complete arguments
+if (finishReason === "tool_calls" && isCollectingFunctionArgs) {
+  console.log(`Function call '${functionName}' is complete.`);
+
+  const args = JSON.parse(functionArguments);
+  console.log("Complete function arguments:", args);
+
+  // Reset for the next potential function call
+  functionArguments = "";
+  functionName = "";
+  isCollectingFunctionArgs = false;
+}
+}
+</pre>
+
+<h2>Tool Calling Behavior</h2>
+
+<p>The API supports advanced features such as parallel tool calling and the ability to force tool calls.</p>
+
+<p>You can disable parallel tool calling by setting <code>parallel_tool_calls: false</code>.</p>
+
+<h2>Parallel Tool Calling</h2>
+<p>Any models released on or after Nov 6, 2023 may by default generate multiple tool calls in a single response, indicating that they should be called in parallel.</p>
+
+<p>This is especially useful if executing the given functions takes a long time. For example, the model may call functions to get the weather in 3 different locations at the same time, which will result in a message with 3 function calls in the <code>tool_calls</code> array.</p>
+
+<h3>Example Response (Python)</h3>
+<pre>
+response = Choice(
+  finish_reason='tool_calls', 
+  index=0, 
+  logprobs=None, 
+  message=chat.completionsMessage(
+      content=None, 
+      role='assistant', 
+      function_call=None, 
+      tool_calls=[
+          chat.completionsMessageToolCall(
+              id='call_62136355', 
+              function=Function(
+                  arguments='{"city":"New York"}', 
+                  name='check_weather'), 
+              type='function'),
+          chat.completionsMessageToolCall(
+              id='call_62136356', 
+              function=Function(
+                  arguments='{"city":"London"}', 
+                  name='check_weather'), 
+              type='function'),
+          chat.completionsMessageToolCall(
+              id='call_62136357', 
+              function=Function(
+                  arguments='{"city":"Tokyo"}', 
+                  name='check_weather'), 
+              type='function')
+      ])
+)
+
+# Iterate through tool calls to handle each weather check
+for tool_call in response.message.tool_calls:
+  arguments = json.loads(tool_call.function.arguments)
+  city = arguments['city']
+  weather_info = check_weather(city)
+  print(f"Weather in {city}: {weather_info}")
+</pre>
+
+<h3>Example Response (JavaScript)</h3>
+<pre>
+const response = {
+  finish_reason: 'tool_calls',
+  index: 0,
+  logprobs: null,
+  message: {
+      content: null,
+      role: 'assistant',
+      function_call: null,
+      tool_calls: [
+          {
+              id: 'call_62136355',
+              function: {
+                  arguments: '{"city":"New York"}',
+                  name: 'check_weather'
+              },
+              type: 'function'
+          },
+          {
+              id: 'call_62136356',
+              function: {
+                  arguments: '{"city":"London"}',
+                  name: 'check_weather'
+              },
+              type: 'function'
+          },
+          {
+              id: 'call_62136357',
+              function: {
+                  arguments: '{"city":"Tokyo"}',
+                  name: 'check_weather'
+              },
+              type: 'function'
+          }
+      ]
+  }
+};
+
+// Iterate through tool calls to handle each weather check
+response.message.tool_calls.forEach(tool_call => {
+  const arguments = JSON.parse(tool_call.function.arguments);
+  const city = arguments.city;
+  check_weather(city).then(weather_info => {
+      console.log(`Weather in ${city}: ${weather_info}`);
+  });
+});
+</pre>
+
+<p>Each function call in the array has a unique <code>id</code>.</p>
+
+<p>Once you've executed these function calls in your application, you can provide the result back to the model by adding one new message to the conversation for each function call, each containing the result of one function call, with a <code>tool_call_id</code> referencing the <code>id</code> from <code>tool_calls</code>.</p>
+
+<h3>Example (Python)</h3>
+<pre>
+# Assume we have fetched the weather data from somewhere
+weather_data = {
+  "New York": {"temperature": "22°C", "condition": "Sunny"},
+  "London": {"temperature": "15°C", "condition": "Cloudy"},
+  "Tokyo": {"temperature": "25°C", "condition": "Rainy"}
+}
+  
+# Prepare the chat completion call payload with inline function call result creation
+completion_payload = {
+  "model": "gpt-4o",
+  "messages": [
+      {"role": "system", "content": "You are a helpful assistant providing weather updates."},
+      {"role": "user", "content": "Can you tell me the weather in New York, London, and Tokyo?"},
+      # Append the original function calls to the conversation
+      response['message'],
+      # Include the result of the function calls
+      {
+          "role": "tool",
+          "content": json.dumps({
+              "city": "New York",
+              "weather": weather_data["New York"]
+          }),
+          "tool_call_id": response['message']['tool_calls'][0]['id']
+      },
+      {
+          "role": "tool",
+          "content": json.dumps({
+              "city": "London",
+              "weather": weather_data["London"]
+          }),
+          "tool_call_id": response['message']['tool_calls'][1]['id']
+      },
+      {
+          "role": "tool",
+          "content": json.dumps({
+              "city": "Tokyo",
+              "weather": weather_data["Tokyo"]
+          }),
+          "tool_call_id": response['message']['tool_calls'][2]['id']
+      }
+  ]
+}
+  
+# Call the OpenAI API's chat completions endpoint to send the tool call result back to the model
+response = openai.chat.completions.create(
+  model=completion_payload["model"],
+  messages=completion_payload["messages"]
+)
+  
+# Print the response from the API, which will return something like "In New York the weather is..."
+print(response)
+</pre>
+
+<h3>Example (JavaScript)</h3>
+<pre>
+// Assume we have fetched the weather data from somewhere
+const weather_data = {
+  "New York": { "temperature": "22°C", "condition": "Sunny" },
+  "London": { "temperature": "15°C", "condition": "Cloudy" },
+  "Tokyo": { "temperature": "25°C", "condition": "Rainy" }
+};
+
+// Prepare the chat completion call payload with inline function call result creation
+const completion_payload = {
+  model: "gpt-4o",
+  messages: [
+      { role: "system", content: "You are a helpful assistant providing weather updates." },
+      { role: "user", content: "Can you tell me the weather in New York, London, and Tokyo?" },
+      // Append the original function calls to the conversation
+      response.message,
+      // Include the result of the function calls
+      {
+          role: "tool",
+          content: JSON.stringify({
+              city: "New York",
+              weather: weather_data["New York"]
+          }),
+          tool_call_id: response.message.tool_calls[0].id
+      },
+      {
+          role: "tool",
+          content: JSON.stringify({
+              city: "London",
+              weather: weather_data["London"]
+          }),
+          tool_call_id: response.message.tool_calls[1].id
+      },
+      {
+          role: "tool",
+          content: JSON.stringify({
+              city: "Tokyo",
+              weather: weather_data["Tokyo"]
+          }),
+          tool_call_id: response.message.tool_calls[2].id
+      }
+  ]
+};
+
+// Call the OpenAI API's chat completions endpoint to send the tool call result back to the model
+const response = await openai.chat.completions.create({
+  model: completion_payload.model,
+  messages: completion_payload.messages
+});
+
+// Print the response from the API, which will return something like "In New York the weather is..."
+console.log(response);
+</pre>
+
+<h2>Forcing Tool Calls</h2>
+
+<p>By default, the model is configured to automatically select which tools to call, as determined by the <code>tool_choice: "auto"</code> setting.</p>
+
+<h2>Customizing Tool Behavior</h2>
+<p>We offer three ways to customize the default behavior:</p>
+<ol>
+    <li>
+        To force the model to always call one or more tools, you can set <code>tool_choice: "required"</code>. This is useful for scenarios where you want the model to choose between multiple actions to perform next.
+    </li>
+    <li>
+        To force the model to call a specific function, you can set <code>tool_choice: {"type": "function", "function": {"name": "my_function"}}</code>.
+    </li>
+    <li>
+        To disable function calling and force the model to only generate a user-facing message, either provide no tools or set <code>tool_choice: "none"</code>.
+    </li>
+</ol>
+
+<p>Note that if you do either 1 or 2 (i.e., force the model to call a function), the subsequent <code>finish_reason</code> will be <code>"stop"</code> instead of <code>"tool_calls"</code>.</p>
+
+<h3>Example (Python)</h3>
+<pre>
+from openai import OpenAI
+
+client = OpenAI()
+
+tools = [
+  {
+      "type": "function",
+      "function": {
+          "name": "get_weather",
+          "strict": True,
+          "parameters": {
+              "type": "object",
+              "properties": {
+                  "location": {"type": "string"},
+                  "unit": {"type": "string", "enum": ["c", "f"]},
+              },
+              "required": ["location", "unit"],
+              "additionalProperties": False,
+          },
+      },
+  },
+  {
+      "type": "function",
+      "function": {
+          "name": "get_stock_price",
+          "strict": True,
+          "parameters": {
+              "type": "object",
+              "properties": {
+                  "symbol": {"type": "string"},
+              },
+              "required": ["symbol"],
+              "additionalProperties": False,
+          },
+      },
+  },
+]
+
+messages = [{"role": "user", "content": "What's the weather like in Boston today?"}]
+completion = client.chat.completions.create(
+  model="gpt-4o",
+  messages=messages,
+  tools=tools,
+  tool_choice="required"
+)
+
+print(completion)
+</pre>
+
+<h3>Example (JavaScript)</h3>
+<pre>
+import { OpenAI } from "openai";
+const openai = new OpenAI();
+
+// Define a set of tools to use
+const tools = [
+  {
+      type: "function",
+      function: {
+          name: "get_weather",
+          strict: true,
+          parameters: {
+              type: "object",
+              properties: {
+                  location: { type: "string" },
+                  unit: { type: "string", enum: ["c", "f"] },
+              },
+              required: ["location", "unit"],
+              additionalProperties: false,
+          },
+      },
+  },
+  {
+      type: "function",
+      function: {
+          name: "get_stock_price",
+          strict: true,
+          parameters: {
+              type: "object",
+              properties: {
+                  symbol: { type: "string" },
+              },
+              required: ["symbol"],
+              additionalProperties: false,
+          },
+      },
+  },
+];
+
+// Call the OpenAI API's chat completions endpoint
+const response = await openai.chat.completions.create({
+  model: "gpt-4o",
+  messages: [
+      {
+          role: "user",
+          content: "Can you tell me the weather in Tokyo?",
+      },
+  ],
+  tool_choice: "required",
+  tools,
+});
+
+// Print the response from the API
+console.log(response);
+</pre>
+
+<h3>Learn More</h3>
+<p>To see a practical example of how to force tool calls, check out our cookbook:</p>
+<p>
+    <a href="https://cookbook.openai.com/examples/using_tool_required_for_customer_service" target="_blank">
+        Customer service with tool required
+    </a>
+</p>
+<p>Learn how to add an element of determinism to your customer service assistant.</p>
+
+<h3>Edge cases</h3>
+
+<p>We recommend using the SDK to handle the edge cases described below. If for any reason you cannot use the SDK, you should handle these cases in your code.</p>
+
+<p>When you receive a response from the API, if you're not using the SDK, there are a number of edge cases that production code should handle.</p>
+
+<p>In general, the API will return a valid function call, but there are some edge cases when this won't happen:</p>
+
+<ul>
+    <li>When you have specified <code>max_tokens</code> and the model's response is cut off as a result</li>
+    <li>When the model's output includes copyrighted material</li>
+</ul>
+
+<p>Also, when you force the model to call a function, the <code>finish_reason</code> will be <code>"stop"</code> instead of <code>"tool_calls"</code>.</p>
+
+<p>This is how you can handle these different cases in your code:</p>
+
+<pre><code># Check if the conversation was too long for the context window
+if response['choices'][0]['message']['finish_reason'] == "length":
+  print("Error: The conversation was too long for the context window.")
+  # Handle the error as needed, e.g., by truncating the conversation or asking for clarification
+  handle_length_error(response)
+  
+# Check if the model's output included copyright material (or similar)
+if response['choices'][0]['message']['finish_reason'] == "content_filter":
+  print("Error: The content was filtered due to policy violations.")
+  # Handle the error as needed, e.g., by modifying the request or notifying the user
+  handle_content_filter_error(response)
+  
+# Check if the model has made a tool_call. This is the case either if the "finish_reason" is "tool_calls" or if the "finish_reason" is "stop" and our API request had forced a function call
+if (response['choices'][0]['message']['finish_reason'] == "tool_calls" or 
+  # This handles the edge case where if we forced the model to call one of our functions, the finish_reason will actually be "stop" instead of "tool_calls"
+  (our_api_request_forced_a_tool_call and response['choices'][0]['message']['finish_reason'] == "stop")):
+  # Handle tool call
+  print("Model made a tool call.")
+  # Your code to handle tool calls
+  handle_tool_call(response)
+  
+# Else finish_reason is "stop", in which case the model was just responding directly to the user
+elif response['choices'][0]['message']['finish_reason'] == "stop":
+  # Handle the normal stop case
+  print("Model responded directly to the user.")
+  # Your code to handle normal responses
+  handle_normal_response(response)
+  
+# Catch any other case, this is unexpected
+else:
+  print("Unexpected finish_reason:", response['choices'][0]['message']['finish_reason'])
+  # Handle unexpected cases as needed
+  handle_unexpected_case(response)
+</code></pre>
+
+<pre><code>// Check if the conversation was too long for the context window
+if (response.choices[0].message.finish_reason === "length") {
+  console.log("Error: The conversation was too long for the context window.");
+  // Handle the error as needed, e.g., by truncating the conversation or asking for clarification
+  handleLengthError(response);
+}
+
+// Check if the model's output included copyright material (or similar)
+if (response.choices[0].message.finish_reason === "content_filter") {
+  console.log("Error: The content was filtered due to policy violations.");
+  // Handle the error as needed, e.g., by modifying the request or notifying the user
+  handleContentFilterError(response);
+}
+
+// Check if the model has made a tool_call. This is the case either if the "finish_reason" is "tool_calls" or if the "finish_reason" is "stop" and our API request had forced a function call
+if (
+  response.choices[0].message.finish_reason === "tool_calls" ||
+  (ourApiRequestForcedAToolCall && response.choices[0].message.finish_reason === "stop")
+) {
+  // Handle tool call
+  console.log("Model made a tool call.");
+  // Your code to handle tool calls
+  handleToolCall(response);
+}
+
+// Else finish_reason is "stop", in which case the model was just responding directly to the user
+else if (response.choices[0].message.finish_reason === "stop") {
+  // Handle the normal stop case
+  console.log("Model responded directly to the user.");
+  // Your code to handle normal responses
+  handleNormalResponse(response);
+}
+
+// Catch any other case, this is unexpected
+else {
+  console.log("Unexpected finish_reason:", response.choices[0].message.finish_reason);
+  // Handle unexpected cases as needed
+  handleUnexpectedCase(response);
+}
+</code></pre>
+
+<h3>Token usage</h3>
+
+<p>Under the hood, functions are injected into the system message in a syntax the model has been trained on. This means functions count against the model's context limit and are billed as input tokens. If you run into token limits, we suggest limiting the number of functions or the length of the descriptions you provide for function parameters.</p>
+
+<p>It is also possible to use fine-tuning to reduce the number of tokens used if you have many functions defined in your tools specification.</p>
+
+<h4>Examples</h4>
+
+<p>The <a href="https://cookbook.openai.com/">OpenAI Cookbook</a> has several end-to-end examples to help you implement function calling.</p>
+
+<p>In our introductory cookbook <a href="https://cookbook.openai.com/examples/how_to_call_functions_with_chat_models">how to call functions with chat models</a>, we outline two examples of how the models can use function calling. This is a great resource to follow as you get started:</p>
+
+<p><a href="https://cookbook.openai.com/examples/how_to_call_functions_with_chat_models">Function calling</a></p>
+
+<p>Learn from more examples demonstrating function calling</p>
+
+<h4>Shopping Assistant</h4>
+
+<h5>Scenario</h5>
+
+<p>A shopping assistant helps users navigate an e-commerce site. It needs to fetch product data from a structured database, and suggest recommendations based on the user's query. Once the user has found a product they are interested in, the assistant can add it to the shopping cart on their behalf.</p>
+
+<h4>Function definitions</h4>
+
+<p>To recommend products to the user, the assistant needs to query the products database. To find more details about a product, such as reviews and additional information (e.g. materials, dimensions...), the assistant needs to fetch more information on the specific product. It also needs a tool to add items to the shopping cart.</p>
+
+<p>We will then define the following functions:</p>
+
+<ul>
+    <li><code>get_product_recommendations</code>: Recommends products based on filters</li>
+    <li><code>get_product_details</code>: Fetches more details about a product</li>
+    <li><code>add_to_cart</code>: Adds a product to the shopping cart</li>
+</ul>
+
+<pre><code>[
+    {
+        "type": "function",
+        "function": {
+            "name": "get_product_recommendations",
+            "description": "Searches for products matching certain criteria in the database",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "categories": {
+                        "description": "categories that could be a match",
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "enum": [
+                                "coats & jackets",
+                                "accessories",
+                                "tops",
+                                "jeans & trousers",
+                                "skirts & dresses",
+                                "shoes"
+                            ]
+                        }
+                    },
+                    "colors": {
+                        "description": "colors that could be a match, empty array if N/A",
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "enum": [
+                                "black",
+                                "white",
+                                "brown",
+                                "red",
+                                "blue",
+                                "green",
+                                "orange",
+                                "yellow",
+                                "pink",
+                                "gold",
+                                "silver"
+                            ]
+                        }
+                    },
+                    "keywords": {
+                        "description": "keywords that should be present in the item title or description",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "price_range": {
+                        "type": "object",
+                        "properties": {
+                            "min": {
+                                "type": "number"
+                            },
+                            "max": {
+                                "type": "number"
+                            }
+                        },
+                        "required": [
+                        "min",
+                        "max"
+                        ],
+                        "additionalProperties": false
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "The maximum number of products to return, use 5 by default if nothing is specified by the user"
+                    }
+                },
+                "required": [
+                    "categories",
+                    "colors",
+                    "keywords",
+                    "price_range",
+                    "limit"
+                ],
+                "additionalProperties": false
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_product_details",
+            "description": "Fetches more details about a product",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "product_id": {
+                        "type": "string",
+                        "description": "The ID of the product to fetch details for"
+                    }
+                },
+                "required": [
+                    "product_id"
+                ],
+                "additionalProperties": false
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "add_to_cart",
+            "description": "Add items to cart when the user has confirmed their interest.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "product_id": {
+                                    "type": "string",
+                                    "description": "ID of the product to add to the cart"
+                                },
+                                "quantity": {
+                                    "type": "integer",
+                                    "description": "Quantity of the product to add to the cart"
+                                }
+                            },
+                            "required": [
+                                "product_id",
+                                "quantity"
+                            ],
+                            "additionalProperties": false
+                        }
+                    },
+                    "required": [
+                        "items"
+                    ],
+                    "additionalProperties": false
+                }
+            }
+        }
+    }
+]
+</code></pre>
+
+<h4>Customer Service Agent</h4>
+
+<h5>Scenario</h5>
+
+<p>A customer service assistant on an e-commerce site helps users after they have made a purchase. It can answer questions about their orders or the company policy regarding returns and refunds. It can also help customers process a return and give status updates.</p>
+
+<h4>Function definitions</h4>
+
+<p>To answer questions about orders, the assistant needs to fetch order details from the orders database. In case the user doesn't know their order number, the assistant should also be able to fetch the last orders for a given user. It should also be able to search the FAQ to respond to general questions. Lastly, it should be equipped with tools to process returns and find a return status.</p>
+
+<p>We will then define the following functions:</p>
+
+<ul>
+    <li><code>get_order_details</code>: Fetches details about a specific order</li>
+    <li><code>get_user_orders</code>: Fetches the last orders for a given user</li>
+    <li><code>search_faq</code>: Searches the FAQ for an answer to the user's question</li>
+    <li><code>process_return</code>: Processes a return and creates a return label</li>
+    <li><code>get_return_status</code>: Finds the status of a return</li>
+</ul>
+
+<pre><code>[
+    {
+        "type": "function",
+        "function": {
+            "name": "get_order_details",
+            "description": "Fetches details about a specific order",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "order_id": {
+                        "type": "string",
+                        "description": "The ID of the order to fetch details for"
+                    }
+                },
+                "required": [
+                    "order_id"
+                ],
+                "additionalProperties": false
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_user_orders",
+            "description": "Fetches the last orders for a given user",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "user_id": {
+                        "type": "string",
+                        "description": "The ID of the user to fetch orders for"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "The maximum number of orders to return, use 5 by default and increase the number if the relevant order is not found."
+                    }
+                },
+                "required": [
+                    "user_id", "limit"
+                ],
+                "additionalProperties": false
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "search_faq",
+            "description": "Searches the FAQ for an answer to the user's question",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "The question to search the FAQ for"
+                    }
+                },
+                "required": [
+                    "query"
+                ],
+                "additionalProperties": false
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "process_return",
+            "description": "Processes a return and creates a return label",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "order_id": {
+                        "type": "string",
+                        "description": "The ID of the order to process a return for"
+                    },
+                    "items": {
+                        "type": "array",
+                        "description": "The items to return",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "product_id": {
+                                    "type": "string",
+                                    "description": "The ID of the product to return"
+                                },
+                                "quantity": {
+                                    "type": "integer",
+                                    "description": "The quantity of the product to return"
+                                }
+                            },
+                            "required": [
+                                "product_id",
+                                "quantity"
+                            ],
+                            "additionalProperties": false
+                        }
+                    }
+                },
+                "required": [
+                    "order_id",
+                    "items"
+                ],
+                "additionalProperties": false
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_return_status",
+            "description": "Finds the status of a return",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "order_id": {
+                        "type": "string",
+                        "description": "The ID of the order to fetch the return status for"
+                    }
+                },
+                "required": [
+                    "order_id"
+                ],
+                "additionalProperties": false
+            }
+        }
+    }
+]
+</code></pre>
+
+<h4>Interactive Booking Experience</h4>
+<h4>Scenario</h4>
+
+<p>A user is on an interactive website to find a place to eat or stay. After they mention their preferences, the website updates to show recommendations on a map. Once they have found a place they are interested in, a booking is programmatically made on their behalf.</p>
+
+<h4>Function definitions</h4>
+
+<p>To be able to show recommendations, the app needs to first fetch recommendations based on the user's preferences, and then pin those recommendations on the map. To book a place, the assistant needs to fetch the availability of the place, and then create a booking on the user's behalf.</p>
+
+<p>We will then define the following functions:</p>
+
+<ul>
+    <li><code>get_recommendations</code>: Fetches recommendations based on the user's preferences</li>
+    <li><code>show_on_map</code>: Places pins on the map</li>
+    <li><code>fetch_availability</code>: Fetches the availability for a given place</li>
+    <li><code>create_booking</code>: Creates a booking on the user's behalf</li>
+</ul>
+
+<pre><code>[
+    {
+        "type": "function",
+        "function": {
+            "name": "get_recommendations",
+            "description": "Fetches recommendations based on the user's preferences",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "description": "The type of place to search recommendations for",
+                        "enum": ["restaurant", "hotel"]
+                    },
+                    "keywords": {
+                        "type": "array",
+                        "description": "Keywords that should be present in the recommendations",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "location": {
+                        "type": "string",
+                        "description": "The location to search recommendations for"
+                    }
+                },
+                "required": [
+                    "type",
+                    "keywords",
+                    "location"
+                ],
+                "additionalProperties": false
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "show_on_map",
+            "description": "Places pins on the map for relevant locations",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "pins": {
+                        "type": "array",
+                        "description": "The pins to place on the map",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string",
+                                    "description": "The name of the place"
+                                },
+                                "coordinates": {
+                                    "type": "object",
+                                    "properties": {
+                                        "latitude": { "type": "number" },
+                                        "longitude": { "type": "number" }
+                                    },
+                                    "required": [
+                                        "latitude",
+                                        "longitude"
+                                    ],
+                                    "additionalProperties": false
+                                }
+                            },
+                            "required": [
+                                "name",
+                                "coordinates"
+                            ],
+                            "additionalProperties": false
+                        }
+                    }
+                },
+                "required": [
+                    "pins"
+                ],
+                "additionalProperties": false
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "fetch_availability",
+            "description": "Fetches the availability for a given place",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "place_id": {
+                        "type": "string",
+                        "description": "The ID of the place to fetch availability for"
+                    }
+                }
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "create_booking",
+            "description": "Creates a booking on the user's behalf",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "place_id": {
+                        "type": "string",
+                        "description": "The ID of the place to create a booking for"
+                    },
+                    "booking_details": {
+                        "anyOf": [
+                            {
+                                "type": "object",
+                                "description": "Restaurant booking with specific date and time",
+                                "properties": {
+                                    "date": {
+                                        "type": "string",
+                                        "description": "The date of the booking, in format YYYY-MM-DD"
+                                    },
+                                    "time": {
+                                        "type": "string",
+                                        "description": "The time of the booking, in format HH:MM"
+                                    }
+                                },
+                                "required": [
+                                    "date",
+                                    "time"
+                                ]
+                            },
+                            {
+                                "type": "object",
+                                "description": "Hotel booking with specific check-in and check-out dates",
+                                "properties": {
+                                    "check_in": {
+                                        "type": "string",
+                                        "description": "The check-in date of the booking, in format YYYY-MM-DD"
+                                    },
+                                    "check_out": {
+                                        "type": "string",
+                                        "description": "The check-out date of the booking, in format YYYY-MM-DD"
+                                    }
+                                },
+                                "required": [
+                                    "check_in",
+                                    "check_out"
+                                ]
+                            }
+                        ]
+                    }
+                },
+                "required": [
+                    "place_id",
+                    "booking_details"
+                ],
+                "additionalProperties": false
+            }
+        }
+    }
+]
+</code></pre>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Best Practices</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+        }
+        h1, h2, h3 {
+            color: #333;
+        }
+        pre {
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-left: 5px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Best practices</h1>
+
+<h3>Turn on Structured Outputs by setting <code>strict: "true"</code></h3>
+<p>When Structured Outputs is turned on, the arguments generated by the model for function calls will reliably match the JSON Schema that you provide.</p>
+<p>If you are not using Structured Outputs, then the structure of arguments is not guaranteed to be correct, so we recommend the use of a validation library like Pydantic to first verify the arguments prior to using them.</p>
+
+<h3>Name functions intuitively, with detailed descriptions</h3>
+<p>If you find the model does not generate calls to the correct functions, you may need to update your function names and descriptions so the model more clearly understands when it should select each function. Avoid using abbreviations or acronyms to shorten function and argument names.</p>
+<p>You can also include detailed descriptions for when a function should be called. For complex functions, you should include descriptions for each of the arguments to help the model know what it needs to ask the user to collect that argument.</p>
+
+<h3>Name function parameters intuitively, with detailed descriptions</h3>
+<p>Use clear and descriptive names for function parameters. If applicable, specify the expected format for a parameter in the description (e.g., YYYY-mm-dd or dd/mm/yy for a date).</p>
+
+<h3>Consider providing additional information about how and when to call functions in your system message</h3>
+<p>Providing clear instructions in your system message can significantly improve the model's function calling accuracy. For example, guide the model with instructions like the following:</p>
+<pre><code>"Use check_order_status when the user inquires about the status of their order, such as 'Where is my order?' or 'Has my order shipped yet?'".</code></pre>
+<p>Provide context for complex scenarios. For example:</p>
+<pre><code>"Before scheduling a meeting with schedule_meeting, check the user's calendar for availability using check_availability to avoid conflicts."</code></pre>
+
+<h3>Use enums for function arguments when possible</h3>
+<p>If your use case allows, you can use enums to constrain the possible values for arguments. This can help reduce hallucinations.</p>
+<p>For example, if you have an AI assistant that helps with ordering a T-shirt, you likely have a fixed set of sizes for the T-shirt that you might want to constrain the model to choose from. If you want the model to output “s”, “m”, “l”, for small, medium, and large, you could provide those values in an enum, like this:</p>
+<pre><code>{
+    "name": "pick_tshirt_size",
+    "description": "Call this if the user specifies which size t-shirt they want",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "size": {
+                "type": "string",
+                "enum": ["s", "m", "l"],
+                "description": "The size of the t-shirt that the user would like to order"
+            }
+        },
+        "required": ["size"],
+        "additionalProperties": false
+    }
+}</code></pre>
+<p>If you don't constrain the output, a user may say “large” or “L”, and the model may use these values as a parameter. As your code may expect a specific structure, it's helpful to limit the possible values the model can choose from.</p>
+
+<h3>Keep the number of functions low for higher accuracy</h3>
+<p>We recommend that you use no more than 20 tools in a single API call.</p>
+<p>Developers typically see a reduction in the model's ability to select the correct tool once they have between 10-20 tools defined.</p>
+<p>If your use case requires the model to be able to pick between a large number of custom functions, you may want to explore fine-tuning (<a href="https://cookbook.openai.com/examples/fine_tuning_for_function_calling">learn more</a>) or break out the tools and group them logically to create a multi-agent system.</p>
+
+<h3>Set up evals to act as an aid in prompt engineering your function definitions and system messages</h3>
+<p>We recommend for non-trivial uses of function calling setting up an evaluation system that allow you to measure how frequently the correct function is called or correct arguments are generated for a wide variety of possible user messages. Learn more about setting up evals on the <a href="https://cookbook.openai.com/examples/evaluation/getting_started_with_openai_evals">OpenAI Cookbook</a>.</p>
+<p>You can then use these to measure whether adjustments to your function definitions and system messages will improve or hurt your integration.</p>
+
+<h3>Fine-tuning may help improve accuracy for function calling</h3>
+<p>Fine-tuning a model can improve performance at function calling for your use case, especially if you have a large number of functions, or complex, nuanced or similar functions.</p>
+<p>See our fine-tuning for function calling <a href="https://cookbook.openai.com/examples/fine_tuning_for_function_calling">cookbook</a> for more information.</p>
+
+</body>
+</html>

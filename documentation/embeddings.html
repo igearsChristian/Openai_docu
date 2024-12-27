@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vector Embeddings Documentation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        h1, h2, h3 {
+            color: #333;
+        }
+        code {
+            background: #eaeaea;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+        pre {
+            background: #eaeaea;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .faq {
+            margin-top: 40px;
+        }
+        .highlight {
+            background-color: #e6f7e6; /* Light green background */
+            color: #333;              /* Dark text color */
+            padding: 10px;           /* Padding around the text */
+            border-radius: 5px;      /* Rounded corners */
+            font-family: Arial, sans-serif; /* Font style */
+            margin: 10px 0;          /* Margin for spacing */
+        }
+    </style>
+</head>
+<body>
+
+<h1>Vector Embeddings</h1>
+<p>Learn how to turn text into numbers, unlocking use cases like search.</p>
+
+<div class="highlight">
+<h3>New Embedding Models</h3>
+<p><code>text-embedding-3-small</code> and <code>text-embedding-3-large</code>, our newest and most performant embedding models are now available, with lower costs, higher multilingual performance, and new parameters to control the overall size.</p>
+</div>
+
+<h2>What are Embeddings?</h2>
+<p>OpenAI’s text embeddings measure the relatedness of text strings. Embeddings are commonly used for:</p>
+<ul>
+    <li><strong>Search</strong> (where results are ranked by relevance to a query string)</li>
+    <li><strong>Clustering</strong> (where text strings are grouped by similarity)</li>
+    <li><strong>Recommendations</strong> (where items with related text strings are recommended)</li>
+    <li><strong>Anomaly detection</strong> (where outliers with little relatedness are identified)</li>
+    <li><strong>Diversity measurement</strong> (where similarity distributions are analyzed)</li>
+    <li><strong>Classification</strong> (where text strings are classified by their most similar label)</li>
+</ul>
+<p>An embedding is a vector (list) of floating point numbers. The distance between two vectors measures their relatedness. Small distances suggest high relatedness and large distances suggest low relatedness.</p>
+<p>Visit our <a href = "#">pricing page</a> to learn about Embeddings pricing. Requests are billed based on the number of <a href = "#">tokens</a> in the <a href = "#">input</a>.</p>
+<h2>How to Get Embeddings</h2>
+<p>To get an embedding, send your text string to the <a href="/docs/api-reference/embeddings">embeddings API endpoint</a> along with the embedding model name (e.g. <code>text-embedding-3-small</code>). The response will contain an embedding (list of floating point numbers), which you can extract, save in a vector database, and use for many different use cases:</p>
+
+<h3>Example: Getting embeddings</h3>
+<pre><code>import OpenAI from "openai";
+const openai = new OpenAI();
+
+const embedding = await openai.embeddings.create({
+  model: "text-embedding-3-small",
+  input: "Your text string goes here",
+  encoding_format: "float",
+});
+
+console.log(embedding);
+</code></pre>
+
+<pre><code>from openai import OpenAI
+client = OpenAI()
+
+response = client.embeddings.create(
+    input="Your text string goes here",
+    model="text-embedding-3-small"
+)
+
+print(response.data[0].embedding)
+</code></pre>
+
+<pre><code>curl https://api.openai.com/v1/embeddings \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $OPENAI_API_KEY" \
+  -d '{
+    "input": "Your text string goes here",
+    "model": "text-embedding-3-small"
+  }'
+</code></pre>
+
+<h2>Embedding Models</h2>
+<p>OpenAI offers two powerful third-generation embedding models (denoted by <code>-3</code> in the model ID). You can read the embedding v3 <a href="https://openai.com/blog/new-embedding-models-and-api-updates">announcement blog post</a> for more details.</p>
+
+<table>
+    <thead>
+        <tr>
+            <th>Model</th>
+            <th>~ Pages per dollar</th>
+            <th>Performance on MTEB eval</th>
+            <th>Max input</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>text-embedding-3-small</td>
+            <td>62,500</td>
+            <td>62.3%</td>
+            <td>8191</td>
+        </tr>
+        <tr>
+            <td>text-embedding-3-large</td>
+            <td>9,615</td>
+            <td>64.6%</td>
+            <td>8191</td>
+        </tr>
+        <tr>
+            <td>text-embedding-ada-002</td>
+            <td>12,500</td>
+            <td>61.0%</td>
+            <td>8191</td>
+        </tr>
+    </tbody>
+</table>
+
+<h2>Use Cases</h2>
+<p>Here we show some representative use cases. We will use the <a href="https://www.kaggle.com/snap/amazon-fine-food-reviews">Amazon fine-food reviews dataset</a> for the following examples.</p>
+
+<h3>Obtaining the Embeddings</h3>
+<p>The dataset contains a total of 568,454 food reviews Amazon users left up to October 2012. We will use a subset of 1,000 most recent reviews for illustration purposes. The reviews are in English and tend to be positive or negative. Each review has a ProductId, UserId, Score, review title (Summary) and review body (Text). For example:</p>
+<table>
+    <thead>
+        <tr>
+            <th>Product Id</th>
+            <th>User Id</th>
+            <th>Score</th>
+            <th>Summary</th>
+            <th>Text</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>B001E4KFG0</td>
+            <td>A3SGXH7AUHU8GW</td>
+            <td>5</td>
+            <td>Good Quality Dog Food</td>
+            <td>I have bought several of the Vitality canned...</td>
+        </tr>
+        <tr>
+            <td>B00813GRG4</td>
+            <td>A1D87F6ZCVE5NK</td>
+            <td>1</td>
+            <td>Not as Advertised</td>
+            <td>Product arrived labeled as Jumbo Salted Peanut...</td>
+        </tr>
+    </tbody>
+</table>
+<p>We will combine the review summary and review text into a single combined text. The model will encode this combined text and output a single vector embedding.</p>
+<a href = "https://cookbook.openai.com/examples/get_embeddings_from_dataset">Get embeddings from dataset</a>
+<pre><code>from openai import OpenAI
+client = OpenAI()
+
+def get_embedding(text, model="text-embedding-3-small"):
+    text = text.replace("\n", " ")
+    return client.embeddings.create(input=[text], model=model).data[0].embedding
+
+df['ada_embedding'] = df.combined.apply(lambda x: get_embedding(x, model='text-embedding-3-small'))
+df.to_csv('output/embedded_1k_reviews.csv', index=False)
+</code></pre>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Embedding Techniques</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+        }
+        h1, h2, h3, h4 {
+            color: #333;
+        }
+        code {
+            background-color: #f4f4f4;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+        pre {
+            background-color: #f4f4f4;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Embedding Techniques</h1>
+
+<h2>Loading Data</h2>
+<p>To load the data from a saved file, you can run the following:</p>
+
+<pre><code>import pandas as pd
+
+df = pd.read_csv('output/embedded_1k_reviews.csv')
+df['ada_embedding'] = df.ada_embedding.apply(eval).apply(np.array)</code></pre>
+
+<h2>Reducing Embedding Dimensions</h2>
+<p>Using larger embeddings, for example storing them in a vector store for retrieval, generally costs more and consumes more compute, memory and storage than using smaller embeddings.</p>
+
+<p>Both of our new embedding models were trained with a technique that allows developers to trade-off performance and cost of using embeddings. Specifically, developers can shorten embeddings (i.e. remove some numbers from the end of the sequence) without the embedding losing its concept-representing properties by passing in the dimensions API parameter. For example, on the MTEB benchmark, a text-embedding-3-large embedding can be shortened to a size of 256 while still outperforming an unshortened text-embedding-ada-002 embedding with a size of 1536. You can read more about how changing the dimensions impacts performance in our embeddings v3 launch blog post.</p>
+
+<p>In general, using the dimensions parameter when creating the embedding is the suggested approach. In certain cases, you may need to change the embedding dimension after you generate it. When you change the dimension manually, you need to be sure to normalize the dimensions of the embedding as is shown below.</p>
+
+<pre><code>from openai import OpenAI
+import numpy as np
+
+client = OpenAI()
+
+def normalize_l2(x):
+    x = np.array(x)
+    if x.ndim == 1:
+        norm = np.linalg.norm(x)
+        if norm == 0:
+            return x
+        return x / norm
+    else:
+        norm = np.linalg.norm(x, 2, axis=1, keepdims=True)
+        return np.where(norm == 0, x, x / norm)
+
+response = client.embeddings.create(
+    model="text-embedding-3-small", input="Testing 123", encoding_format="float"
+)
+
+cut_dim = response.data[0].embedding[:256]
+norm_dim = normalize_l2(cut_dim)
+
+print(norm_dim)</code></pre>
+
+<h2>Dynamically Changing Dimensions</h2>
+<p>Dynamically changing the dimensions enables very flexible usage. For example, when using a vector data store that only supports embeddings up to 1024 dimensions long, developers can now still use our best embedding model text-embedding-3-large and specify a value of 1024 for the dimensions API parameter, which will shorten the embedding down from 3072 dimensions, trading off some accuracy in exchange for the smaller vector size.</p>
+
+<h2>Question Answering Using Embeddings-Based Search</h2>
+<p><a href="Question_answering_using_embeddings.ipynb">Question_answering_using_embeddings.ipynb</a></p>
+<p>There are many common cases where the model is not trained on data which contains key facts and information you want to make accessible when generating responses to a user query. One way of solving this, as shown below, is to put additional information into the context window of the model. This is effective in many use cases but leads to higher token costs. In this notebook, we explore the tradeoff between this approach and embeddings based search.</p>
+
+<pre><code>query = f"""Use the below article on the 2022 Winter Olympics to answer the subsequent question. If the answer cannot be found, write "I don't know."
+
+Article:
+\"\"\"
+{wikipedia_article_on_curling}
+\"\"\"
+
+Question: Which athletes won the gold medal in curling at the 2022 Winter Olympics?"""
+
+response = client.chat.completions.create(
+    messages=[
+        {'role': 'system', 'content': 'You answer questions about the 2022 Winter Olympics.'},
+        {'role': 'user', 'content': query},
+    ],
+    model=GPT_MODEL,
+    temperature=0,
+)
+
+print(response.choices[0].message.content)</code></pre>
+
+<h2>Text Search Using Embeddings</h2>
+<p><a href="Semantic_text_search_using_embeddings.ipynb">Semantic_text_search_using_embeddings.ipynb</a></p>
+<p>To retrieve the most relevant documents we use the cosine similarity between the embedding vectors of the query and each document, and return the highest scored documents.</p>
+
+<pre><code>from openai.embeddings_utils import get_embedding, cosine_similarity
+
+def search_reviews(df, product_description, n=3, pprint=True):
+    embedding = get_embedding(product_description, model='text-embedding-3-small')
+    df['similarities'] = df.ada_embedding.apply(lambda x: cosine_similarity(x, embedding))
+    res = df.sort_values('similarities', ascending=False).head(n)
+    return res
+
+res = search_reviews(df, 'delicious beans', n=3)</code></pre>
+
+<h2>Code Search Using Embeddings</h2>
+<p><a href="Code_search.ipynb">Code_search.ipynb</a></p>
+<p>Code search works similarly to embedding-based text search. We provide a method to extract Python functions from all the Python files in a given repository. Each function is then indexed by the text-embedding-3-small model.</p>
+
+<p>To perform a code search, we embed the query in natural language using the same model. Then we calculate cosine similarity between the resulting query embedding and each of the function embeddings. The highest cosine similarity results are most relevant.</p>
+
+<pre><code>from openai.embeddings_utils import get_embedding, cosine_similarity
+
+df['code_embedding'] = df['code'].apply(lambda x: get_embedding(x, model='text-embedding-3-small'))
+
+def search_functions(df, code_query, n=3, pprint=True, n_lines=7):
+    embedding = get_embedding(code_query, model='text-embedding-3-small')
+    df['similarities'] = df.code_embedding.apply(lambda x: cosine_similarity(x, embedding))
+
+    res = df.sort_values('similarities', ascending=False).head(n)
+    return res
+
+res = search_functions(df, 'Completions API tests', n=3)</code></pre>
+
+<h2>Recommendations Using Embeddings</h2>
+<p><a href="Recommendation_using_embeddings.ipynb">Recommendation_using_embeddings.ipynb</a></p>
+<p>Because shorter distances between embedding vectors represent greater similarity, embeddings can be useful for recommendation.</p>
+
+<p>Below, we illustrate a basic recommender. It takes in a list of strings and one 'source' string, computes their embeddings, and then returns a ranking of the strings, ranked from most similar to least similar. As a concrete example, the linked notebook below applies a version of this function to the AG news dataset (sampled down to 2,000 news article descriptions) to return the top 5 most similar articles to any given source article.</p>
+
+<pre><code>def recommendations_from_strings(
+    strings: List[str],
+    index_of_source_string: int,
+    model="text-embedding-3-small",
+) -> List[int]:
+    """Return nearest neighbors of a given string."""
+
+    # get embeddings for all strings
+    embeddings = [embedding_from_string(string, model=model) for string in strings]
+
+    # get the embedding of the source string
+    query_embedding = embeddings[index_of_source_string]
+
+    # get distances between the source embedding and other embeddings (function from embeddings_utils.py)
+    distances = distances_from_embeddings(query_embedding, embeddings, distance_metric="cosine")
+
+    # get indices of nearest neighbors (function from embeddings_utils.py)
+    indices_of_nearest_neighbors = indices_of_nearest_neighbors_from_distances(distances)
+    return indices_of_nearest_neighbors</code></pre>
+
+<h2>Data Visualization in 2D</h2>
+<p><a href="Visualizing_embeddings_in_2D.ipynb">Visualizing_embeddings_in_2D.ipynb</a></p>
+<p>The size of the embeddings varies with the complexity of the underlying model. In order to visualize this high dimensional data we use the t-SNE algorithm to transform the data into two dimensions.</p>
+
+<p>We color the individual reviews based on the star rating which the reviewer has given:</p>
+<ul>
+    <li>1-star: red</li>
+    <li>2-star: dark orange</li>
+    <li>3-star: gold</li>
+    <li>4-star: turquoise</li>
+    <li>5-star: dark green</li>
+</ul>
+
+<p>The visualization seems to have produced roughly 3 clusters, one of which has mostly negative reviews.</p>
+
+<pre><code>import pandas as pd
+from sklearn.manifold import TSNE
+import matplotlib.pyplot as plt
+import matplotlib
+
+df = pd.read_csv('output/embedded_1k_reviews.csv')
+matrix = df.ada_embedding.apply(eval).to_list()
+
+# Create a t-SNE model and transform the data
+tsne = TSNE(n_components=2, perplexity=15, random_state=42, init='random', learning_rate=200)
+vis_dims = tsne.fit_transform(matrix)
+
+colors = ["red", "darkorange", "gold", "turquoise", "darkgreen"]
+x = [x for x,y in vis_dims]
+y = [y for x,y in vis_dims]
+color_indices = df.Score.values - 1
+
+colormap = matplotlib.colors.ListedColormap(colors)
+plt.scatter(x, y, c=color_indices, cmap=colormap, alpha=0.3)
+plt.title("Amazon ratings visualized in language using t-SNE")</code></pre>
+
+<h2>Embedding as a Text Feature Encoder for ML Algorithms</h2>
+<p><a href="Regression_using_embeddings.ipynb">Regression_using_embeddings.ipynb</a></p>
+<p>An embedding can be used as a general free-text feature encoder within a machine learning model. Incorporating embeddings will improve the performance of any machine learning model, if some of the relevant inputs are free text. An embedding can also be used as a categorical feature encoder within a ML model. This adds most value if the names of categorical variables are meaningful and numerous, such as job titles. Similarity embeddings generally perform better than search embeddings for this task.</p>
+
+<p>We observed that generally the embedding representation is very rich and information dense. For example, reducing the dimensionality of the inputs using SVD or PCA, even by 10%, generally results in worse downstream performance on specific tasks.</p>
+
+<p>This code splits the data into a training set and a testing set, which will be used by the following two use cases, namely regression and classification.</p>
+
+<pre><code>from sklearn.model_selection import train_test_split
+
+X_train, X_test, y_train, y_test = train_test_split(
+    list(df.ada_embedding.values),
+    df.Score,
+    test_size = 0.2,
+    random_state=42
+)</code></pre>
+
+<h2>Regression Using the Embedding Features</h2>
+<p>Embeddings present an elegant way of predicting a numerical value. In this example we predict the reviewer’s star rating, based on the text of their review. Because the semantic information contained within embeddings is high, the prediction is decent even with very few reviews.</p>
+
+<p>We assume the score is a continuous variable between 1 and 5, and allow the algorithm to predict any floating point value. The ML algorithm minimizes the distance of the predicted value to the true score, and achieves a mean absolute error of 0.39, which means that on average the prediction is off by less than half a star.</p>
+
+<pre><code>from sklearn.ensemble import RandomForestRegressor
+
+rfr = RandomForestRegressor(n_estimators=100)
+rfr.fit(X_train, y_train)
+preds = rfr.predict(X_test)</code></pre>
+
+<h2>Classification Using the Embedding Features</h2>
+<p><a href="Classification_using_embeddings.ipynb">Classification_using_embeddings.ipynb</a></p>
+<p>This time, instead of having the algorithm predict a value anywhere between 1 and 5, we will attempt to classify the exact number of stars for a review into 5 buckets, ranging from 1 to 5 stars.</p>
+
+<p>After the training, the model learns to predict 1 and 5-star reviews much better than the more nuanced reviews (2-4 stars), likely due to more extreme sentiment expression.</p>
+
+<pre><code>from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import classification_report, accuracy_score
+
+clf = RandomForestClassifier(n_estimators=100)
+clf.fit(X_train, y_train)
+preds = clf.predict(X_test)</code></pre>
+
+<h2>Zero-Shot Classification</h2>
+<p><a href="Zero-shot_classification_with_embeddings.ipynb">Zero-shot_classification_with_embeddings.ipynb</a></p>
+<p>We can use embeddings for zero shot classification without any labeled training data. For each class, we embed the class name or a short description of the class. To classify some new text in a zero-shot manner, we compare its embedding to all class embeddings and predict the class with the highest similarity.</p>
+
+<pre><code>from openai.embeddings_utils import cosine_similarity, get_embedding
+
+df = df[df.Score != 3]
+df['sentiment'] = df.Score.replace({1:'negative', 2:'negative', 4:'positive', 5:'positive'})
+
+labels = ['negative', 'positive']
+label_embeddings = [get_embedding(label, model=model) for label in labels]
+
+def label_score(review_embedding, label_embeddings):
+    return cosine_similarity(review_embedding, label_embeddings[1]) - cosine_similarity(review_embedding, label_embeddings[0])
+
+prediction = 'positive' if label_score('Sample Review', label_embeddings) > 0 else 'negative'</code></pre>
+
+<h2>Obtaining User and Product Embeddings for Cold-Start Recommendation</h2>
+<p><a href="User_and_product_embeddings.ipynb">User_and_product_embeddings.ipynb</a></p>
+<p>We can obtain a user embedding by averaging over all of their reviews. Similarly, we can obtain a product embedding by averaging over all the reviews about that product. In order to showcase the usefulness of this approach we use a subset of 50k reviews to cover more reviews per user and per product.</p>
+
+<p>We evaluate the usefulness of these embeddings on a separate test set, where we plot similarity of the user and product embedding as a function of the rating. Interestingly, based on this approach, even before the user receives the product we can predict better than random whether they would like the product.</p>
+<img src = "https://cdn.openai.com/API/docs/images/embeddings-boxplot.webp" style="width: 30%; height: auto;">
+<pre><code>user_embeddings = df.groupby('UserId').ada_embedding.apply(np.mean)
+prod_embeddings = df.groupby('ProductId').ada_embedding.apply(np.mean)</code></pre>
+
+<h2>Clustering</h2>
+<p><a href="Clustering.ipynb">Clustering.ipynb</a></p>
+<p>Clustering is one way of making sense of a large volume of textual data. Embeddings are useful for this task, as they provide semantically meaningful vector representations of each text. Thus, in an unsupervised way, clustering will uncover hidden groupings in our dataset.</p>
+
+<p>In this example, we discover four distinct clusters: one focusing on dog food, one on negative reviews, and two on positive reviews.</p>
+<img src = "https://cdn.openai.com/API/docs/images/embeddings-cluster.webp" style="width: 30%; height: auto;">
+<pre><code>import numpy as np
+from sklearn.cluster import KMeans
+
+matrix = np.vstack(df.ada_embedding.values)
+n_clusters = 4
+
+kmeans = KMeans(n_clusters = n_clusters, init='k-means++', random_state=42)
+kmeans.fit(matrix)
+df['Cluster'] = kmeans.labels_</code></pre>
+
+<h2>FAQ</h2>
+
+<h3>How can I tell how many tokens a string has before I embed it?</h3>
+<p>In Python, you can split a string into tokens with OpenAI's tokenizer <a href = "#"><code>tiktoken.</code></a></p>
+<p>Example code:</p>
+
+<pre><code>import tiktoken
+
+def num_tokens_from_string(string: str, encoding_name: str) -> int:
+    """Returns the number of tokens in a text string."""
+    encoding = tiktoken.get_encoding(encoding_name)
+    num_tokens = len(encoding.encode(string))
+    return num_tokens
+
+num_tokens_from_string("tiktoken is great!", "cl100k_base")</code></pre>
+
+<p>For third-generation embedding models like text-embedding-3-small, use the cl100k_base encoding.</p>
+<p>More details and example code are in the OpenAI Cookbook guide <a href = "#">how to count tokens with tiktoken.</a></p>
+
+<h3>How can I retrieve K nearest embedding vectors quickly?</h3>
+<p>For searching over many vectors quickly, we recommend using a vector database. You can find examples of working with vector databases and the OpenAI API in our Cookbook on GitHub.</p>
+
+<h3>Which distance function should I use?</h3>
+<p>We recommend cosine similarity. The choice of distance function typically doesn't matter much.</p>
+<p>OpenAI embeddings are normalized to length 1, which means that:</p>
+<ul>
+    <li>Cosine similarity can be computed slightly faster using just a dot product</li>
+    <li>Cosine similarity and Euclidean distance will result in the identical rankings</li>
+</ul>
+
+<h3>Can I share my embeddings online?</h3>
+<p>Yes, customers own their input and output from our models, including in the case of embeddings. You are responsible for ensuring that the content you input to our API does not violate any applicable law or our Terms of Use.</p>
+
+<h3>Do V3 embedding models know about recent events?</h3>
+<p>No, the text-embedding-3-large and text-embedding-3-small models lack knowledge of events that occurred after September 2021. This is generally not as much of a limitation as it would be for text generation models but in certain edge cases it can reduce performance.</p>
+
+</body>
+</html>

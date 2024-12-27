@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenAI o1 Series Models</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        h1, h2, h3 {
+            color: #333;
+        }
+        code {
+            background: #e2e2e2;
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+        pre {
+            background: #e2e2e2;
+            padding: 10px;
+            border-radius: 4px;
+            overflow: auto;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        @media (max-width: 600px) {
+            body {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+        <h1>Reasoning Models</h1>
+        <p>Explore advanced reasoning and problem-solving models.</p>
+
+        <p>OpenAI o1 series models are new large language models trained with reinforcement learning to perform complex reasoning. o1 models <a href = "#">think before they answer</a>, producing a long internal chain of thought before responding to the user. o1 models excel in scientific reasoning, ranking in the 89th percentile on competitive programming questions (Codeforces), placing among the top 500 students in the US in a qualifier for the USA Math Olympiad (AIME), and exceeding human PhD-level accuracy on a benchmark of physics, biology, and chemistry problems (GPQA).</p>
+
+        <h3>Available Models</h3>
+        <ul>
+            <li><code>o1</code>: designed to reason about hard problems using broad general knowledge.</li>
+            <li><code>o1-mini</code>: a faster and more affordable version of o1, particularly adept at coding, math, and science tasks where extensive general knowledge isn't required.</li>
+        </ul>
+
+        <h2>Quickstart</h2>
+        <p>Both <code>o1</code> and <code>o1-mini</code> are available through the chat completions endpoint.</p>
+
+        <h3>Using the o1 Model</h3>
+        <pre><code>import OpenAI from "openai";
+const openai = new OpenAI();
+
+const prompt = `Write a bash script that takes a matrix represented as a string with 
+format '[1,2],[3,4],[5,6]' and prints the transpose in the same format.`;
+
+const completion = await openai.chat.completions.create({
+  model: "o1",
+  messages: [
+    {
+      role: "user", 
+      content: prompt
+    }
+  ]
+});
+
+console.log(completion.choices[0].message.content);</code></pre>
+
+        <h2>How Reasoning Works</h2>
+        <p>The o1 models introduce <strong>reasoning tokens</strong>. The models use these reasoning tokens to "think", breaking down their understanding of the prompt and considering multiple approaches to generating a response. After generating reasoning tokens, the model produces an answer as visible completion tokens, and discards the reasoning tokens from its context.</p>
+
+        <p>Here is an example of a multi-step conversation between a user and an assistant. Input and output tokens from each step are carried over, while reasoning tokens are discarded.</p>
+        <img src = "https://cdn.openai.com/API/docs/images/context-window.png"style="width: 50%; height: auto;">
+        <h3>Managing the Context Window</h3>
+        <p>The o1 and o1-mini models offer a context window of 200,000 and 128,000 tokens respectively. Each completion has an upper limit on the maximum number of output tokens — this includes both the invisible reasoning tokens and the visible completion tokens. The maximum output token limits are:</p>
+        <ul>
+            <li><code>o1</code>: Up to 100,000 tokens</li>
+            <li><code>o1-mini</code>: Up to 65,536 tokens</li>
+        </ul>
+
+<p>It's important to ensure there's enough space in the context window for reasoning tokens when creating completions. Depending on the problem's complexity, the models may generate anywhere from a few hundred to tens of thousands of reasoning tokens. The exact number of reasoning tokens used is visible in the <a href = "#">usage object of the chat completion response object</a>, under <code>completion_tokens_details:</code></p>
+
+<pre><code>
+    {
+        "usage": {
+          "prompt_tokens": 9,
+          "completion_tokens": 12,
+          "total_tokens": 21,
+          "completion_tokens_details": {
+            "reasoning_tokens": 0,
+            "accepted_prediction_tokens": 0,
+            "rejected_prediction_tokens": 0
+          }
+        }
+      }
+</code></pre>
+        <h2>Controlling costs</h2>
+        <p>To manage costs with the o1 series models, you can limit the total number of tokens the model generates (including both reasoning and completion tokens) by using the <code><a href="/docs/api-reference/chat/create#chat-create-max_completion_tokens">max_completion_tokens</a></code> parameter.</p>
+        
+        <p>In previous models, the <code>max_tokens</code> parameter controlled both the number of tokens generated and the number of tokens visible to the user, which were always equal. However, with the o1 series, the total tokens generated can exceed the number of visible tokens due to the internal reasoning tokens.</p>
+        
+        <p>Because some applications might rely on <code>max_tokens</code> matching the number of tokens received from the API, the o1 series introduces <code>max_completion_tokens</code> to explicitly control the total number of tokens generated by the model, including both reasoning and visible completion tokens. This explicit opt-in ensures no existing applications break when using the new models. The <code>max_tokens</code> parameter continues to function as before for all previous models.</p>
+    
+        <h2>Allocating space for reasoning</h2>
+        <p>If the generated tokens reach the context window limit or the <code>max_completion_tokens</code> value you've set, you'll receive a chat completion response with the <code>finish_reason</code> set to <code>length</code>. This might occur before any visible completion tokens are produced, meaning you could incur costs for input and reasoning tokens without receiving a visible response.</p>
+        
+        <p>To prevent this, ensure there's sufficient space in the context window or adjust the <code>max_completion_tokens</code> value to a higher number. OpenAI recommends reserving at least 25,000 tokens for reasoning and outputs when you start experimenting with these models. As you become familiar with the number of reasoning tokens your prompts require, you can adjust this buffer accordingly.</p>
+    
+        <h2>Advice on prompting</h2>
+        <p>These models perform best with straightforward prompts. Some prompt engineering techniques, like few-shot learning or instructing the model to "think step by step," may not enhance performance (and can sometimes hinder it). Here are some best practices:</p>
+        <ul>
+            <li><strong>Developer messages are the new system messages:</strong> Starting with <code>o1-2024-12-17</code>, o1 models support <code>developer</code> messages rather than <code>system</code> messages, to align with the <a href="https://cdn.openai.com/spec/model-spec-2024-05-08.html#follow-the-chain-of-command">chain of command behavior described in the model spec</a>.</li>
+            <li><strong>Keep prompts simple and direct:</strong> The models excel at understanding and responding to brief, clear instructions without the need for extensive guidance.</li>
+            <li><strong>Avoid chain-of-thought prompts:</strong> Since these models perform reasoning internally, prompting them to "think step by step" or "explain your reasoning" is unnecessary.</li>
+            <li><strong>Use delimiters for clarity:</strong> Use delimiters like triple quotation marks, XML tags, or section titles to clearly indicate distinct parts of the input, helping the model interpret different sections appropriately.</li>
+            <li><strong>Limit additional context in retrieval-augmented generation (RAG):</strong> When providing additional context or documents, include only the most relevant information to prevent the model from overcomplicating its response.</li>
+            <li><strong>Markdown formatting:</strong> Starting with <code>o1-2024-12-17</code>, o1 models in the API will avoid generating responses with markdown formatting. To signal to the model when you <strong>do</strong> want markdown formatting in the response, include the string <code>Formatting re-enabled</code> on the first line of your <code>developer</code> message.</li>
+        </ul>
+ 
+        <h1>Prompt Examples</h1>
+
+        <h2>Coding (refactoring)</h2>
+        <p>OpenAI o1 series models are able to implement complex algorithms and produce code. This prompt asks o1 to refactor a React component based on some specific criteria.</p>
+    
+        <h3>Ask o1 models to refactor code</h3>
+    
+        <pre><code>
+    import OpenAI from "openai";
+    const openai = new OpenAI();
+    
+    const prompt = `
+    Instructions:
+    - Given the React component below, change it so that nonfiction books have red
+      text. 
+    - Return only the code in your reply
+    - Do not include any additional formatting, such as markdown code blocks
+    - For formatting, use four space tabs, and do not allow any lines of code to 
+      exceed 80 columns
+    
+    const books = [
+      { title: 'Dune', category: 'fiction', id: 1 },
+      { title: 'Frankenstein', category: 'fiction', id: 2 },
+      { title: 'Moneyball', category: 'nonfiction', id: 3 },
+    ];
+    
+    export default function BookList() {
+      const listItems = books.map(book =>
+        &lt;li&gt;
+          {book.title}
+        &lt;/li&gt;
+      );
+    
+      return (
+        &lt;ul&gt;{listItems}&lt;/ul&gt;
+      );
+    }
+    `.trim();
+    
+    const completion = await openai.chat.completions.create({
+      model: "o1-mini",
+      messages: [
+        {
+          role: "user",
+          content: prompt,
+        },
+      ]
+    });
+    
+    console.log(completion.usage.completion_tokens_details);
+        </code></pre>
+    
+        <pre><code>
+    from openai import OpenAI
+    
+    client = OpenAI()
+    
+    prompt = """
+    Instructions:
+    - Given the React component below, change it so that nonfiction books have red
+      text. 
+    - Return only the code in your reply
+    - Do not include any additional formatting, such as markdown code blocks
+    - For formatting, use four space tabs, and do not allow any lines of code to 
+      exceed 80 columns
+    
+    const books = [
+      { title: 'Dune', category: 'fiction', id: 1 },
+      { title: 'Frankenstein', category: 'fiction', id: 2 },
+      { title: 'Moneyball', category: 'nonfiction', id: 3 },
+    ];
+    
+    export default function BookList() {
+      const listItems = books.map(book =>
+        &lt;li&gt;
+          {book.title}
+        &lt;/li&gt;
+      );
+    
+      return (
+        &lt;ul&gt;{listItems}&lt;/ul&gt;
+      );
+    }
+    """
+    
+    response = client.chat.completions.create(
+        model="o1-mini",
+        messages=[
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": prompt
+                    },
+                ],
+            }
+        ]
+    )
+    
+    print(response.choices[0].message.content)
+        </code></pre>
+
+        <h1>Coding (planning)</h1>
+
+<p>OpenAI o1 series models are also adept in creating multi-step plans. This example prompt asks o1 to create a filesystem structure for a full solution, along with Python code that implements the desired use case.</p>
+
+<h2>Ask o1 models to plan and create a Python project</h2>
+
+<pre><code class="javascript">import OpenAI from "openai";
+const openai = new OpenAI();
+
+const prompt = `
+I want to build a Python app that takes user questions and looks 
+them up in a database where they are mapped to answers. If there 
+is close match, it retrieves the matched answer. If there isn't, 
+it asks the user to provide an answer and stores the 
+question/answer pair in the database. Make a plan for the directory 
+structure you'll need, then return each file in full. Only supply 
+your reasoning at the beginning and end, not throughout the code.
+`.trim();
+
+const completion = await openai.chat.completions.create({
+  model: "o1-mini",
+  messages: [
+    {
+      role: "user",
+      content: prompt,
+    },
+  ]
+});
+
+console.log(completion.usage.completion_tokens_details);
+</code></pre>
+
+<pre><code class="python">from openai import OpenAI
+
+client = OpenAI()
+
+prompt = """
+I want to build a Python app that takes user questions and looks 
+them up in a database where they are mapped to answers. If there 
+is close match, it retrieves the matched answer. If there isn't, 
+it asks the user to provide an answer and stores the 
+question/answer pair in the database. Make a plan for the directory 
+structure you'll need, then return each file in full. Only supply 
+your reasoning at the beginning and end, not throughout the code.
+"""
+
+response = client.chat.completions.create(
+    model="o1-preview",
+    messages=[
+        {
+            "role": "user",
+            "content": [
+                {
+                    "type": "text",
+                    "text": prompt
+                },
+            ],
+        }
+    ]
+)
+
+print(response.choices[0].message.content)
+</code></pre>
+
+<h2>STEM Research</h2>
+
+<p>OpenAI o1 series models have shown excellent performance in STEM research. Prompts asking for support of basic research tasks should show strong results.</p>
+
+<h2>Ask o1 models questions related to basic scientific research</h2>
+
+<pre><code class="javascript">import OpenAI from "openai";
+const openai = new OpenAI();
+
+const prompt = `
+What are three compounds we should consider investigating to 
+advance research into new antibiotics? Why should we consider 
+them?
+`;
+ 
+const completion = await openai.chat.completions.create({
+  model: "o1",
+  messages: [
+    {
+      role: "user", 
+      content: prompt,
+    }
+  ]
+});
+
+console.log(completion.choices[0].message.content);
+</code></pre>
+
+<pre><code class="python">from openai import OpenAI
+client = OpenAI()
+
+prompt = """
+What are three compounds we should consider investigating to 
+advance research into new antibiotics? Why should we consider 
+them?
+"""
+
+response = client.chat.completions.create(
+    model="o1",
+    messages=[
+        {
+            "role": "user", 
+            "content": prompt
+        }
+    ]
+)
+
+print(response.choices[0].message.content)
+</code></pre>
+
+<h2>Limitations</h2>
+<ul>
+    <li>Current <code>o1</code> models</li>
+    <ul>
+        <li>Available to <a href="/docs/guides/rate-limits#usage-tiers">Tier 5 customers only</a></li>
+        <li>Streaming support not available in the REST API</li>
+        <li>Parallel tool calls not yet supported</li>
+        <li>Not available in the Batch API</li>
+        <li>Currently unsupported API parameters: <code>temperature</code>, <code>top_p</code>, <code>presence_penalty</code>, <code>frequency_penalty</code>, <code>logprobs</code>, <code>top_logprobs</code>, <code>logit_bias</code></li>
+    </ul>
+</ul>
+
+<h2>Use case examples</h2>
+<p>Some examples of using o1 for real-world use cases can be found in <a href="https://cookbook.openai.com">the cookbook</a>.</p>
+
+<a href="https://cookbook.openai.com/examples/o1/using_reasoning_for_data_validation">Using reasoning for data validation</a> <br>
+Evaluate a synthetic medical data set for discrepancies.</li> <br>
+<a href="https://cookbook.openai.com/examples/o1/using_reasoning_for_routine_generation">Using reasoning for routine generation</a> <br>
+Use help center articles to generate actions that an agent could perform.</li>
+</ul>
+<br>
+<span style="font-family: Arial, sans-serif; margin-bottom: 10px;">Was this page useful?</span>
+<button class="button">👍</button>
+<button class="button">👎</button>
+</body>
+</html>

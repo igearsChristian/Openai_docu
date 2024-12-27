@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Realtime API</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            line-height: 1.6;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        a {
+            color: #007BFF;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        code {
+            background: #e2e2e2;
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Realtime API</h1>
+
+<hr>
+
+<p>Build low-latency, multi-modal experiences with the Realtime API.</p>
+
+<p>The OpenAI Realtime API enables you to build low-latency, multi-modal conversational experiences with <a href="/docs/models#gpt-4o-realtime">expressive voice-enabled models</a>. These models support realtime text and audio inputs and outputs, voice activation detection, function calling, and much more.</p>
+
+<p>The Realtime API uses GPT-4o and GPT-4o-mini models with additional capabilities to support realtime interactions. The most recent model snapshots for each can be referenced by:</p>
+<ul>
+    <li><code>gpt-4o-realtime-preview-2024-12-17</code></li>
+    <li><code>gpt-4o-mini-realtime-preview-2024-12-17</code></li>
+</ul>
+
+<p>Dated model snapshot IDs and more information can be found on the <a href="/docs/models#gpt-4o-realtime">models page here</a>.</p>
+
+<h2>Get started with the Realtime API</h2>
+
+<p>Learn to connect to the Realtime API using either WebRTC (ideal for client-side applications) or WebSockets (great for server-to-server applications). Once you connect to the Realtime API, learn how to use client and server events to build your application.</p>
+
+<ul>
+    <li><a href="/docs/guides/realtime-webrtc">Connect to the Realtime API using WebRTC</a> - To interact with Realtime models in web browsers or client-side applications, we recommend connecting via WebRTC. Learn how in this guide!</li>
+    <li><a href="/docs/guides/realtime-websocket">Connect to the Realtime API using WebSockets</a> - In server-to-server applications, you can connect to the Realtime API over WebSocket as well. Learn how in this guide!</li>
+    <li><a href="/docs/guides/realtime-model-capabilities">Realtime model capabilities</a> - Learn to use the Realtime API's evented interface to build applications using Realtime models. Learn to manage the Realtime session, add audio to model conversations, send text generation requests to the model, and make function calls to extend the capabilities of the model.</li>
+    <li><a href="https://github.com/openai/openai-python">Python SDK</a> - Beta support in the Python SDK for connecting to the Realtime API over a WebSocket.</li>
+    <li><a href="/docs/api-reference/realtime">Full API reference</a> - Check out the API reference for all available interfaces.</li>
+</ul>
+
+<h2>Example applications</h2>
+
+<p>Check out one of the example applications below to see the Realtime API in action.</p>
+
+<ul>
+    <li><a href="https://github.com/openai/openai-realtime-console">Realtime Console</a> - To get started quickly, download and configure the Realtime console demo. See events flowing back and forth, and inspect their contents. Learn how to execute custom logic with function calling.</li>
+    <li><a href="https://github.com/craigsdennis/talk-to-javascript-openai-workers">Client-side tool calling</a> - Built with Cloudflare Workers, an example application showcasing client-side tool calling. Also check out the <a href="https://www.youtube.com/watch?v=TcOytsfva0o">tutorial on YouTube</a>.</li>
+</ul>
+
+<h2>Partner integrations</h2>
+
+<p>Check out these partner integrations, which use the Realtime API in frontend applications and telephony use cases.</p>
+
+<ul>
+    <li><a href="https://docs.livekit.io/agents/openai/overview/">LiveKit integration guide</a> - How to use the Realtime API with LiveKit's WebRTC infrastructure.</li>
+    <li><a href="https://www.twilio.com/en-us/blog/twilio-openai-realtime-api-launch-integration">Twilio integration guide</a> - Build Realtime apps using Twilio's powerful voice APIs.</li>
+    <li><a href="https://docs.agora.io/en/open-ai-integration/get-started/quickstart">Agora integration quickstart</a> - How to integrate Agora's real-time audio communication capabilities with the Realtime API.</li>
+</ul>
+
+</body>
+</html>

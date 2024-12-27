@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speech to Text - OpenAI API</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        h1, h2, h3 {
+            color: #333;
+        }
+        pre {
+            background: #eee;
+            padding: 10px;
+            border-radius: 5px;
+            overflow: auto;
+        }
+        code {
+            background-color: #eaeaea;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+        .note {
+            background: #e7f3fe;
+            border-left: 6px solid #2196F3;
+            padding: 10px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Speech to Text</h1>
+<p>Learn how to turn audio into text.</p>
+
+<h2>Overview</h2>
+<p>The Audio API provides two speech to text endpoints, <code>transcriptions</code> and <code>translations</code>, based on our state-of-the-art open source large-v2 <a href="https://openai.com/blog/whisper/">Whisper model</a>. They can be used to:</p>
+<ul>
+    <li>Transcribe audio into whatever language the audio is in.</li>
+    <li>Translate and transcribe the audio into English.</li>
+</ul>
+<p>File uploads are currently limited to 25 MB and the following input file types are supported: <code>mp3</code>, <code>mp4</code>, <code>mpeg</code>, <code>mpga</code>, <code>m4a</code>, <code>wav</code>, and <code>webm</code>.</p>
+
+<h2>Quickstart</h2>
+
+<h3>Transcriptions</h3>
+<p>The transcriptions API takes as input the audio file you want to transcribe and the desired output file format for the transcription of the audio. We currently support multiple input and output file formats.</p>
+
+<h4>Transcribe audio</h4>
+<pre><code class="javascript">import fs from "fs";
+import OpenAI from "openai";
+
+const openai = new OpenAI();
+
+const transcription = await openai.audio.transcriptions.create({
+  file: fs.createReadStream("/path/to/file/audio.mp3"),
+  model: "whisper-1",
+});
+
+console.log(transcription.text);</code></pre>
+
+<pre><code class="python">from openai import OpenAI
+client = OpenAI()
+
+audio_file = open("/path/to/file/audio.mp3", "rb")
+transcription = client.audio.transcriptions.create(
+    model="whisper-1", 
+    file=audio_file
+)
+
+print(transcription.text)</code></pre>
+
+<pre><code class="bash">curl --request POST \
+  --url https://api.openai.com/v1/audio/transcriptions \
+  --header "Authorization: Bearer $OPENAI_API_KEY" \
+  --header 'Content-Type: multipart/form-data' \
+  --form file=@/path/to/file/audio.mp3 \
+  --form model=whisper-1</code></pre>
+
+<p>By default, the response type will be JSON with the raw text included.</p>
+
+<h3>Additional Options</h3>
+<pre><code class="javascript">const transcription = await openai.audio.transcriptions.create({
+  file: fs.createReadStream("/path/to/file/speech.mp3"),
+  model: "whisper-1",
+  response_format: "text",
+});
+
+console.log(transcription.text);</code></pre>
+
+<h3>Translations</h3>
+<p>The translations API takes as input the audio file in any of the supported languages and transcribes, if necessary, the audio into English.</p>
+<pre><code class="javascript">const transcription = await openai.audio.translations.create({
+  file: fs.createReadStream("/path/to/file/german.mp3"),
+  model: "whisper-1",
+});
+
+console.log(transcription.text);</code></pre>
+
+<h2>Supported Languages</h2>
+<p>We currently support the following languages through both the <code>transcriptions</code> and <code>translations</code> endpoint:</p>
+<p>Afrikaans, Arabic, Armenian, Azerbaijani, Belarusian, Bosnian, Bulgarian, Catalan, Chinese, Croatian, Czech, Danish, Dutch, English, Estonian, Finnish, French, Galician, German, Greek, Hebrew, Hindi, Hungarian, Icelandic, Indonesian, Italian, Japanese, Kannada, Kazakh, Korean, Latvian, Lithuanian, Macedonian, Malay, Marathi, Maori, Nepali, Norwegian, Persian, Polish, Portuguese, Romanian, Russian, Serbian, Slovak, Slovenian, Spanish, Swahili, Swedish, Tagalog, Tamil, Thai, Turkish, Ukrainian, Urdu, Vietnamese, and Welsh.</p>
+
+<h2>Timestamps</h2>
+<p>By default, the Whisper API will output a transcript of the provided audio in text. The <code>timestamp_granularities[]</code> parameter enables structured and timestamped JSON output format.</p>
+
+<pre><code class="javascript">const transcription = await openai.audio.transcriptions.create({
+  file: fs.createReadStream("audio.mp3"),
+  model: "whisper-1",
+  response_format: "verbose_json",
+  timestamp_granularities: ["word"]
+});
+
+console.log(transcription.words);</code></pre>
+
+<h2>Longer Inputs</h2>
+<p>To handle audio files longer than 25 MB, you can split them using the <a href="https://github.com/jiaaro/pydub">PyDub</a> package.</p>
+<pre><code class="python">from pydub import AudioSegment
+
+song = AudioSegment.from_mp3("good_morning.mp3")
+ten_minutes = 10 * 60 * 1000
+first_10_minutes = song[:ten_minutes]
+first_10_minutes.export("good_morning_10.mp3", format="mp3")</code></pre>
+
+<p>OpenAI makes no guarantees about the usability or security of third-party software like PyDub.</p>
+
+<h2>Prompting</h2>
+<p>You can use a <a href = "#">prompt</a> to improve the quality of the transcripts generated by the Whisper API. The model will try to match the style of the prompt, so it will be more likely to use capitalization and punctuation if the prompt does too. However, the current prompting system is much more limited than our other language models and only provides limited control over the generated audio. Here are some examples of how prompting can help in different scenarios:</p>
+
+<ul>
+    <li>Prompts can be very helpful for correcting specific words or acronyms that the model may misrecognize in the audio. For example, the following prompt improves the transcription of the words DALL·E and GPT-3, which were previously written as "GDP 3" and "DALI": "The transcript is about OpenAI which makes technology like DALL·E, GPT-3, and ChatGPT with the hope of one day building an AGI system that benefits all of humanity."</li>
+    
+    <li>To preserve the context of a file that was split into segments, you can prompt the model with the transcript of the preceding segment. This will make the transcript more accurate, as the model will use the relevant information from the previous audio. The model will only consider the final 224 tokens of the prompt and ignore anything earlier. For multilingual inputs, Whisper uses a custom tokenizer. For English only inputs, it uses the standard GPT-2 tokenizer which are both accessible through the open source Whisper Python package.</li>
+    
+    <li>Sometimes the model might skip punctuation in the transcript. You can avoid this by using a simple prompt that includes punctuation: "Hello, welcome to my lecture."</li>
+    
+    <li>The model may also leave out common filler words in the audio. If you want to keep the filler words in your transcript, you can use a prompt that contains them: "Umm, let me think like, hmm... Okay, here's what I'm, like, thinking."</li>
+    
+    <li>Some languages can be written in different ways, such as simplified or traditional Chinese. The model might not always use the writing style that you want for your transcript by default. You can improve this by using a prompt in your preferred writing style.</li>
+</ul>
+
+
+<h2>Improving Reliability</h2>
+<p>Using the prompt parameter can improve the accuracy of the transcription.</p>
+<pre><code class="javascript">const transcription = await openai.audio.transcriptions.create({
+  file: fs.createReadStream("/path/to/file/speech.mp3"),
+  model: "whisper-1",
+  response_format: "text",
+  prompt:"ZyntriQix, Digique Plus, CynapseFive...",
+});</code></pre>
+
+<h2>Post-processing with GPT-4</h2>
+<pre><code class="javascript">const systemPrompt = `
+You are a helpful assistant for the company ZyntriQix...
+`;
+
+const transcript = await transcribe(audioFile);
+const completion = await openai.chat.completions.create({
+  model: "gpt-4o",
+  temperature: temperature,
+  messages: [
+    { role: "system", content: systemPrompt },
+    { role: "user", content: transcript }
+  ]
+});
+
+console.log(completion.choices[0].message.content);</code></pre>
+
+<h2>Improving reliability</h2>
+
+<p>As we explored in the prompting section, one of the most common challenges faced when using Whisper is the model often does not recognize uncommon words or acronyms. To address this, we have highlighted different techniques which improve the reliability of Whisper in these cases:</p>
+
+<h3>Using the prompt parameter</h3>
+
+<p>The first method involves using the optional prompt parameter to pass a dictionary of the correct spellings.</p>
+
+<p>Since it wasn't trained using instruction-following techniques, Whisper operates more like a base GPT model. It's important to keep in mind that Whisper only considers the first 244 tokens of the prompt.</p>
+
+<h4>Prompt parameter</h4>
+
+<pre><code class="javascript">import fs from "fs";
+import OpenAI from "openai";
+
+const openai = new OpenAI();
+
+const transcription = await openai.audio.transcriptions.create({
+  file: fs.createReadStream("/path/to/file/speech.mp3"),
+  model: "whisper-1",
+  response_format: "text",
+  prompt:"ZyntriQix, Digique Plus, CynapseFive, VortiQore V8, EchoNix Array, OrbitalLink Seven, DigiFractal Matrix, PULSE, RAPT, B.R.I.C.K., Q.U.A.R.T.Z., F.L.I.N.T.",
+});
+
+console.log(transcription.text);</code></pre>
+
+<pre><code class="python">from openai import OpenAI
+client = OpenAI()
+
+audio_file = open("/path/to/file/speech.mp3", "rb")
+transcription = client.audio.transcriptions.create(
+    model="whisper-1", 
+    file=audio_file, 
+    response_format="text",
+    prompt="ZyntriQix, Digique Plus, CynapseFive, VortiQore V8, EchoNix Array, OrbitalLink Seven, DigiFractal Matrix, PULSE, RAPT, B.R.I.C.K., Q.U.A.R.T.Z., F.L.I.N.T."
+)
+
+print(transcription.text)</code></pre>
+
+<p>While it will increase reliability, this technique is limited to only 244 characters so your list of SKUs would need to be relatively small in order for this to be a scalable solution.</p>
+
+<h3>Post-processing with GPT-4</h3>
+
+<p>The second method involves a post-processing step using GPT-4 or GPT-3.5-Turbo.</p>
+
+<p>We start by providing instructions for GPT-4 through the <code>system_prompt</code> variable. Similar to what we did with the prompt parameter earlier, we can define our company and product names.</p>
+
+<h4>Post-processing</h4>
+
+<pre><code class="javascript">const systemPrompt = `
+You are a helpful assistant for the company ZyntriQix. Your task is 
+to correct any spelling discrepancies in the transcribed text. Make 
+sure that the names of the following products are spelled correctly: 
+ZyntriQix, Digique Plus, CynapseFive, VortiQore V8, EchoNix Array, 
+OrbitalLink Seven, DigiFractal Matrix, PULSE, RAPT, B.R.I.C.K., 
+Q.U.A.R.T.Z., F.L.I.N.T. Only add necessary punctuation such as 
+periods, commas, and capitalization, and use only the context provided.
+`;
+
+const transcript = await transcribe(audioFile);
+const completion = await openai.chat.completions.create({
+  model: "gpt-4o",
+  temperature: temperature,
+  messages: [
+    {
+      role: "system",
+      content: systemPrompt
+    },
+    {
+      role: "user",
+      content: transcript
+    }
+  ]
+});
+
+console.log(completion.choices[0].message.content);</code></pre>
+
+<pre><code class="python">system_prompt = """
+You are a helpful assistant for the company ZyntriQix. Your task is to correct 
+any spelling discrepancies in the transcribed text. Make sure that the names of 
+the following products are spelled correctly: ZyntriQix, Digique Plus, 
+CynapseFive, VortiQore V8, EchoNix Array, OrbitalLink Seven, DigiFractal 
+Matrix, PULSE, RAPT, B.R.I.C.K., Q.U.A.R.T.Z., F.L.I.N.T. Only add necessary 
+punctuation such as periods, commas, and capitalization, and use only the 
+context provided.
+"""
+
+def generate_corrected_transcript(temperature, system_prompt, audio_file):
+    response = client.chat.completions.create(
+        model="gpt-4o",
+        temperature=temperature,
+        messages=[
+            {
+                "role": "system",
+                "content": system_prompt
+            },
+            {
+                "role": "user",
+                "content": transcribe(audio_file, "")
+            }
+        ]
+    )
+    return completion.choices[0].message.content
+corrected_text = generate_corrected_transcript(
+    0, system_prompt, fake_company_filepath
+)</code></pre>
+
+<p>If you try this on your own audio file, you can see that GPT-4 manages to correct many misspellings in the transcript. Due to its larger context window, this method might be more scalable than using Whisper's prompt parameter and is more reliable since GPT-4 can be instructed and guided in ways that aren't possible with Whisper given the lack of instruction following.</p>
+
+<br>
+<span style="font-family: Arial, sans-serif; margin-bottom: 10px;">Was this page useful?</span>
+<button class="button">👍</button>
+<button class="button">👎</button>
+
+</body>
+</html>

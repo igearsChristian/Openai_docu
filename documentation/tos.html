@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text to Speech - OpenAI API</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+            padding: 0;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        h1, h2, h3 {
+            color: #2c3e50;
+        }
+        code {
+            background-color: #eaeaea;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+        pre {
+            background-color: #eaeaea;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        a {
+            color: #2980b9;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Text to Speech</h1>
+<p>Learn how to turn text into lifelike spoken audio.</p>
+<h2>Overview</h2>
+<p>The Audio API provides a <a href="/docs/api-reference/audio/createSpeech">speech</a> endpoint based on our <a href="/docs/models#tts">TTS (text-to-speech) model</a>. It comes with 6 built-in voices and can be used to:</p>
+<ul>
+    <li>Narrate a written blog post</li>
+    <li>Produce spoken audio in multiple languages</li>
+    <li>Give real time audio output using streaming</li>
+</ul>
+<p>Here is an example of the <code>alloy</code> voice:</p>
+<audio controls>
+    <source src="audio/Text to Speech.m4a">
+</audio>
+
+
+<p>Please note that our <a href="https://openai.com/policies/usage-policies">usage policies</a> require you to provide a clear disclosure to end users that the TTS voice they are hearing is AI-generated and not a human voice.</p>
+
+<h2>Quickstart</h2>
+<p>The <code>speech</code> endpoint takes in three key inputs: the <a href="/docs/api-reference/audio/createSpeech#audio-createspeech-model">model</a>, the <a href="/docs/api-reference/audio/createSpeech#audio-createspeech-input">text</a> that should be turned into audio, and the <a href="/docs/api-reference/audio/createSpeech#audio-createspeech-voice">voice</a> to be used for the audio generation. A simple request would look like the following:</p>
+
+<h3>Generate spoken audio from input text</h3>
+
+<pre><code class="javascript">import fs from "fs";
+import path from "path";
+import OpenAI from "openai";
+
+const openai = new OpenAI();
+const speechFile = path.resolve("./speech.mp3");
+
+const mp3 = await openai.audio.speech.create({
+  model: "tts-1",
+  voice: "alloy",
+  input: "Today is a wonderful day to build something people love!",
+});
+
+const buffer = Buffer.from(await mp3.arrayBuffer());
+await fs.promises.writeFile(speechFile, buffer);
+</code></pre>
+
+<pre><code class="python">from pathlib import Path
+from openai import OpenAI
+
+client = OpenAI()
+speech_file_path = Path(__file__).parent / "speech.mp3"
+response = client.audio.speech.create(
+    model="tts-1",
+    voice="alloy",
+    input="Today is a wonderful day to build something people love!",
+)
+response.stream_to_file(speech_file_path)
+</code></pre>
+
+<pre><code class="bash">curl https://api.openai.com/v1/audio/speech \
+  -H "Authorization: Bearer $OPENAI_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "tts-1",
+    "input": "Today is a wonderful day to build something people love!",
+    "voice": "alloy"
+  }' \
+  --output speech.mp3
+</code></pre>
+
+<p>By default, the endpoint will output an MP3 file of the spoken audio but it can also be configured to output any of our <a href="#supported-output-formats">supported formats</a>.</p>
+
+<h3>Audio quality</h3>
+<p>For real-time applications, the standard <code>tts-1</code> model provides the lowest latency but at a lower quality than the <code>tts-1-hd</code> model. Due to the way the audio is generated, <code>tts-1</code> is likely to generate content that has more static in certain situations than <code>tts-1-hd</code>. In some cases, the audio may not have noticeable differences depending on your listening device and the individual person.</p>
+
+<h3>Voice options</h3>
+<p>Experiment with different voices (<code>alloy</code>, <code>echo</code>, <code>fable</code>, <code>onyx</code>, <code>nova</code>, and <code>shimmer</code>) to find one that matches your desired tone and audience. The current voices are optimized for English.</p>
+<h3>Alloy</h3>
+<audio controls src="https://cdn.openai.com/API/docs/audio/alloy.wav"></audio>
+<h3>Echo</h3>
+<audio controls src="https://cdn.openai.com/API/docs/audio/echo.wav"></audio>
+<h3>Fable</h3>
+<audio controls src="https://cdn.openai.com/API/docs/audio/fable.wav"></audio>
+<h3>Onyx</h3>
+<audio controls src="https://cdn.openai.com/API/docs/audio/onyx.wav"></audio>
+<h3>Nova</h3>
+<audio controls src="https://cdn.openai.com/API/docs/audio/nova.wav"></audio>
+<h3>shimmer</h3>
+<audio controls src="https://cdn.openai.com/API/docs/audio/shimmer.wav"></audio>
+
+<h3>Streaming real-time audio</h3>
+<p>The Speech API provides support for real-time audio streaming using <a href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Transfer-Encoding">chunk transfer encoding</a>. This means that the audio is able to be played before the full file has been generated and made accessible.</p>
+
+<pre><code class="python">from openai import OpenAI
+
+client = OpenAI()
+
+response = client.audio.speech.create(
+    model="tts-1",
+    voice="alloy",
+    input="Hello world! This is a streaming test.",
+)
+
+response.stream_to_file("output.mp3")
+</code></pre>
+
+<h2>Supported output formats</h2>
+<p>The default response format is "mp3", but other formats like "opus", "aac", "flac", and "pcm" are available.</p>
+<ul>
+    <li><strong>Opus</strong>: For internet streaming and communication, low latency.</li>
+    <li><strong>AAC</strong>: For digital audio compression, preferred by YouTube, Android, iOS.</li>
+    <li><strong>FLAC</strong>: For lossless audio compression, favored by audio enthusiasts for archiving.</li>
+    <li><strong>WAV</strong>: Uncompressed WAV audio, suitable for low-latency applications to avoid decoding overhead.</li>
+    <li><strong>PCM</strong>: Similar to WAV but containing the raw samples in 24kHz (16-bit signed, low-endian), without the header.</li>
+</ul>
+
+<h2>Supported languages</h2>
+<p>The TTS model generally follows the Whisper model in terms of language support. Whisper <a href="https://github.com/openai/whisper#available-models-and-languages">supports the following languages</a> and performs well despite the current voices being optimized for English:</p>
+<ul>
+    <li>Afrikaans</li>
+    <li>Arabic</li>
+    <li>Armenian</li>
+    <li>Azerbaijani</li>
+    <li>Belarusian</li>
+    <li>Bosnian</li>
+    <li>Bulgarian</li>
+    <li>Catalan</li>
+    <li>Chinese</li>
+    <li>Croatian</li>
+    <li>Czech</li>
+    <li>Danish</li>
+    <li>Dutch</li>
+    <li>English</li>
+    <li>Estonian</li>
+    <li>Finnish</li>
+    <li>French</li>
+    <li>Galician</li>
+    <li>German</li>
+    <li>Greek</li>
+    <li>Hebrew</li>
+    <li>Hindi</li>
+    <li>Hungarian</li>
+    <li>Icelandic</li>
+    <li>Indonesian</li>
+    <li>Italian</li>
+    <li>Japanese</li>
+    <li>Kannada</li>
+    <li>Kazakh</li>
+    <li>Korean</li>
+    <li>Latvian</li>
+    <li>Lithuanian</li>
+    <li>Macedonian</li>
+    <li>Malay</li>
+    <li>Marathi</li>
+    <li>Maori</li>
+    <li>Nepali</li>
+    <li>Norwegian</li>
+    <li>Persian</li>
+    <li>Polish</li>
+    <li>Portuguese</li>
+    <li>Romanian</li>
+    <li>Russian</li>
+    <li>Serbian</li>
+    <li>Slovak</li>
+    <li>Slovenian</li>
+    <li>Spanish</li>
+    <li>Swahili</li>
+    <li>Swedish</li>
+    <li>Tagalog</li>
+    <li>Tamil</li>
+    <li>Thai</li>
+    <li>Turkish</li>
+    <li>Ukrainian</li>
+    <li>Urdu</li>
+    <li>Vietnamese</li>
+    <li>Welsh</li>
+</ul>
+<p>You can generate spoken audio in these languages by providing the input text in the language of your choice.</p>
+
+<h2>FAQ</h2>
+<h3>How can I control the emotional range of the generated audio?</h3>
+<p>There is no direct mechanism to control the emotional output of the audio generated. Certain factors may influence the output audio like capitalization or grammar but our internal tests with these have yielded mixed results.</p>
+
+<h3>Can I create a custom copy of my own voice?</h3>
+<p>No, this is not something we support.</p>
+
+<h3>Do I own the outputted audio files?</h3>
+<p>Yes, like with all outputs from our API, the person who created them owns the output. You are still required to inform end users that they are hearing audio generated by AI and not a real person talking to them.</p>
+
+<br>
+<span style="font-family: Arial, sans-serif; margin-bottom: 10px;">Was this page useful?</span>
+<button class="button">👍</button>
+<button class="button">👎</button>
+
+</body>
+</html>

@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Predicted Outputs Documentation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 20px;
+        }
+        code {
+            background-color: #f4f4f4;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+        pre {
+            background-color: #f4f4f4;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        h1, h2, h3 {
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Predicted Outputs</h1>
+<h2>Reduce latency for model responses where much of the response is known ahead of time.</h2>
+
+<p><strong>Predicted Outputs</strong> enable you to speed up API responses from <a href="/docs/api-reference/chat/create">Chat Completions</a> when many of the output tokens are known ahead of time. This is most common when you are regenerating a text or code file with minor modifications. You can provide your prediction using the <code>prediction</code> request parameter in Chat Completions (<a href="/docs/api-reference/chat/create#chat-create-prediction">see here</a>).</p>
+
+<p>Predicted Outputs are available today using the latest <code>gpt-4o</code> and <code>gpt-4o-mini</code> models. Read on to learn how to use Predicted Outputs to reduce latency in your applications.</p>
+
+<h2>Code refactoring example</h2>
+<p>Predicted Outputs are particularly useful for regenerating text documents and code files with small modifications. Let's say you want the <a href="/docs/models#gpt-4o">GPT-4o model</a> to refactor a piece of TypeScript code, and convert the <code>username</code> property of the <code>User</code> class to be <code>email</code> instead:</p>
+
+<pre><code class="language-typescript">class User {
+  firstName: string = "";
+  lastName: string = "";
+  username: string = "";
+}
+
+export default User;</code></pre>
+
+<p>Most of the file will be unchanged, except for line 4 above. If you use the current text of the code file as your prediction, you can regenerate the entire file with lower latency. These time savings add up quickly for larger files.</p>
+
+<p>Below is an example of using the <code>prediction</code> parameter in our SDKs to predict that the final output of the model will be very similar to our original code file, which we use as the prediction text.</p>
+
+<h3>Refactor a TypeScript class with a Predicted Output</h3>
+
+<pre><code class="language-javascript">import OpenAI from "openai";
+
+const code = `
+class User {
+  firstName: string = "";
+  lastName: string = "";
+  username: string = "";
+}
+
+export default User;
+`.trim();
+
+const openai = new OpenAI();
+
+const refactorPrompt = `
+Replace the "username" property with an "email" property. Respond only 
+with code, and with no markdown formatting.
+`;
+
+const completion = await openai.chat.completions.create({
+  model: "gpt-4o",
+  messages: [
+    {
+      role: "user",
+      content: refactorPrompt
+    },
+    {
+      role: "user",
+      content: code
+    }
+  ],
+  prediction: {
+    type: "content",
+    content: code
+  }
+});
+
+// Inspect returned data
+console.log(completion);
+console.log(completion.choices[0].message.content);
+</code></pre>
+
+<pre><code class="language-python">from openai import OpenAI
+
+code = """
+class User {
+  firstName: string = "";
+  lastName: string = "";
+  username: string = "";
+}
+
+export default User;
+"""
+
+refactor_prompt = """
+Replace the "username" property with an "email" property. Respond only 
+with code, and with no markdown formatting.
+"""
+
+client = OpenAI()
+
+completion = client.chat.completions.create(
+    model="gpt-4o",
+    messages=[
+        {
+            "role": "user",
+            "content": refactor_prompt
+        },
+        {
+            "role": "user",
+            "content": code
+        }
+    ],
+    prediction={
+        "type": "content",
+        "content": code
+    }
+)
+
+print(completion)
+print(completion.choices[0].message.content)
+</code></pre>
+
+<pre><code class="language-bash">curl https://api.openai.com/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $OPENAI_API_KEY" \
+  -d '{
+    "model": "gpt-4o",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Replace the username property with an email property. Respond only with code, and with no markdown formatting."
+      },
+      {
+        "role": "user",
+        "content": "$CODE_CONTENT_HERE"
+      }
+    ],
+    "prediction": {
+        "type": "content",
+        "content": "$CODE_CONTENT_HERE"
+    }
+  }'
+</code></pre>
+
+<p>In addition to the refactored code, the model response will contain data that looks something like this:</p>
+
+<pre><code class="language-javascript">{ 
+  id: 'chatcmpl-xxx',
+  object: 'chat.completion',
+  created: 1730918466,
+  model: 'gpt-4o-2024-08-06',
+  choices: [ /* ...actual text response here... */],
+  usage: {
+    prompt_tokens: 81,
+    completion_tokens: 39,
+    total_tokens: 120,
+    prompt_tokens_details: { cached_tokens: 0, audio_tokens: 0 },
+    completion_tokens_details: {
+      reasoning_tokens: 0,
+      audio_tokens: 0,
+      accepted_prediction_tokens: 18,
+      rejected_prediction_tokens: 10
+    }
+  },
+  system_fingerprint: 'fp_159d8341cc'
+}</code></pre>
+
+<p>Note both the <code>accepted_prediction_tokens</code> and <code>rejected_prediction_tokens</code> in the <code>usage</code> object. In this example, 18 tokens from the prediction were used to speed up the response, while 10 were rejected.</p>
+
+<p>Note that any rejected tokens are still billed like other completion tokens generated by the API, so Predicted Outputs can introduce higher costs for your requests.</p>
+
+<h2>Streaming example</h2>
+<h1>Predicted Outputs with Streaming</h1>
+<p>The latency gains of Predicted Outputs are even greater when you use streaming for API responses. Here is an example of the same code refactoring use case, but using streaming in the OpenAI SDKs instead.</p>
+
+<h2>Predicted Outputs with streaming</h2>
+
+<pre><code class="language-javascript">import OpenAI from "openai";
+
+const code = `
+class User {
+  firstName: string = "";
+  lastName: string = "";
+  username: string = "";
+}
+
+export default User;
+`.trim();
+
+const openai = new OpenAI();
+
+const refactorPrompt = `
+Replace the "username" property with an "email" property. Respond only 
+with code, and with no markdown formatting.
+`;
+
+const completion = await openai.chat.completions.create({
+  model: "gpt-4o",
+  messages: [
+    {
+      role: "user",
+      content: refactorPrompt
+    },
+    {
+      role: "user",
+      content: code
+    }
+  ],
+  prediction: {
+    type: "content",
+    content: code
+  },
+  stream: true
+});
+
+// Inspect returned data
+for await (const chunk of stream) {
+  process.stdout.write(chunk.choices[0]?.delta?.content || "");
+}
+</code></pre>
+
+<pre><code class="language-python">from openai import OpenAI
+
+code = """
+class User {
+  firstName: string = "";
+  lastName: string = "";
+  username: string = "";
+}
+
+export default User;
+"""
+
+refactor_prompt = """
+Replace the "username" property with an "email" property. Respond only 
+with code, and with no markdown formatting.
+"""
+
+client = OpenAI()
+
+stream = client.chat.completions.create(
+    model="gpt-4o",
+    messages=[
+        {
+            "role": "user",
+            "content": refactor_prompt
+        },
+        {
+            "role": "user",
+            "content": code
+        }
+    ],
+    prediction={
+        "type": "content",
+        "content": code
+    },
+    stream=True
+)
+
+for chunk in stream:
+    if chunk.choices[0].delta.content is not None:
+        print(chunk.choices[0].delta.content, end="")
+</code></pre>
+
+<h2>Position of predicted text in response</h2>
+
+<p>When providing prediction text, your prediction can appear anywhere within the generated response, and still provide latency reduction for the response. Let's say your predicted text is the simple <a href="https://hono.dev/">Hono</a> server shown below:</p>
+
+<pre><code class="language-typescript">import { serveStatic } from "@hono/node-server/serve-static";
+import { serve } from "@hono/node-server";
+import { Hono } from "hono";
+
+const app = new Hono();
+
+app.get("/api", (c) => {
+  return c.text("Hello Hono!");
+});
+
+// You will need to build the client code first `pnpm run ui:build`
+app.use(
+  "/*",
+  serveStatic({
+    rewriteRequestPath: (path) => `./dist${path}`,
+  })
+);
+
+const port = 3000;
+console.log(`Server is running on port ${port}`);
+
+serve({
+  fetch: app.fetch,
+  port,
+});
+</code></pre>
+
+<p>You could prompt the model to regenerate the file with a prompt like:</p>
+
+<pre><code>Add a get route to this application that responds with 
+the text "hello world". Generate the entire application 
+file again with this route added, and with no other 
+markdown formatting.</code></pre>
+
+<p>The response to the prompt might look something like this:</p>
+
+<pre><code class="language-typescript">import { serveStatic } from "@hono/node-server/serve-static";
+import { serve } from "@hono/node-server";
+import { Hono } from "hono";
+
+const app = new Hono();
+
+app.get("/api", (c) => {
+  return c.text("Hello Hono!");
+});
+
+app.get("/hello", (c) => {
+  return c.text("hello world");
+});
+
+// You will need to build the client code first `pnpm run ui:build`
+app.use(
+  "/*",
+  serveStatic({
+    rewriteRequestPath: (path) => `./dist${path}`,
+  })
+);
+
+const port = 3000;
+console.log(`Server is running on port ${port}`);
+
+serve({
+  fetch: app.fetch,
+  port,
+});
+</code></pre>
+
+<p>You would still see accepted prediction tokens in the response, even though the prediction text appeared both before and after the new content added to the response:</p>
+
+<pre><code class="language-javascript">{ 
+  id: 'chatcmpl-xxx',
+  object: 'chat.completion',
+  created: 1731014771,
+  model: 'gpt-4o-2024-08-06',
+  choices: [ /* completion here... */],
+  usage: {
+    prompt_tokens: 203,
+    completion_tokens: 159,
+    total_tokens: 362,
+    prompt_tokens_details: { cached_tokens: 0, audio_tokens: 0 },
+    completion_tokens_details: {
+      reasoning_tokens: 0,
+      audio_tokens: 0,
+      accepted_prediction_tokens: 60,
+      rejected_prediction_tokens: 0
+    }
+  },
+  system_fingerprint: 'fp_9ee9e968ea'
+}</code></pre>
+
+<p>This time, there were no rejected prediction tokens, because the entire content of the file we predicted was used in the final response. Nice! 🔥</p>
+
+<h2>Limitations</h2>
+
+<p>When using Predicted Outputs, you should consider the following factors and limitations.</p>
+<ul>
+    <li>Predicted Outputs are only supported with the GPT-4o and GPT-4o-mini series of models.</li>
+    <li>When providing a prediction, any tokens provided that are not part of the final completion are still charged at completion token rates. See the <a href="/docs/api-reference/chat/object#chat/object-usage">rejected_prediction_tokens</a> property of the <code>usage</code> object to see how many tokens are not used in the final response.</li>
+    <li>The following <a href="/docs/api-reference/chat/create">API parameters</a> are not supported when using Predicted Outputs:</li>
+    <ul>
+        <li><code>n</code>: values higher than 1 are not supported</li>
+        <li><code>logprobs</code>: not supported</li>
+        <li><code>presence_penalty</code>: values greater than 0 are not supported</li>
+        <li><code>frequency_penalty</code>: values greater than 0 are not supported</li>
+        <li><code>audio</code>: Predicted Outputs are not compatible with <a href="/docs/guides/audio">audio inputs and outputs</a></li>
+        <li><code>modalities</code>: Only <code>text</code> modalities are supported</li>
+        <li><code>max_completion_tokens</code>: not supported</li>
+        <li><code>tools</code>: Function calling is not currently supported with Predicted Outputs</li>
+    </ul>
+</ul>
+</body>
+</html>
